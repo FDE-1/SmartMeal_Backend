@@ -1,0 +1,9 @@
+Afin d'utiliser le backend de l'application plusieurs chose sont nécessaires.
+Il faut tout d'abord installer python et avoir une connection a PSQL qui marche.
+
+L'application est faites pour fonctionner avec les types de base de données comme celle dans le folder db/.
+
+Pour utiliser l'application, il faut tout d'abord installer les requirements.
+Pour cela, il suffit d'utiliser la commande "pip install -r requirements.txt".
+
+Le lancement se fera avec python app.py.
