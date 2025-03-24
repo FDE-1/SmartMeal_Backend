@@ -84,7 +84,7 @@ class PreferenceResource(Resource):
             user = db.session.get(User, preference_id)
             if not user:
                 api.abort(404, "user not found")
-            return user.preferences
+            return user.preferences[0]
         except Exception as e:
             return {'message': str(e)}, 500
 
