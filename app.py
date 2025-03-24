@@ -10,6 +10,7 @@ sys.path.append(str(Path(__file__).parent))
 from smartmeal.serv.connection.loader import init_db, db
 from smartmeal.serv.endpoints.user_routes import api as user_ns
 from smartmeal.serv.endpoints.recipe_routes import api as recipe_ns
+from smartmeal.serv.endpoints.preferences_routes import api as preferences_ns
 
 app = Flask(__name__)
 
@@ -32,6 +33,7 @@ api = Api(
 # Add namespaces
 api.add_namespace(user_ns)
 api.add_namespace(recipe_ns)
+api.add_namespace(preferences_ns)
 
 if __name__ == '__main__':
     app.run(debug=True)
