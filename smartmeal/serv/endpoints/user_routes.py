@@ -25,6 +25,7 @@ class UserList(Resource):
     def post(self):
         """Create a new user"""
         data = request.json
+        
         new_user = User(
             user_name=data['user_name'],
             user_surname=data['user_surname'],
@@ -34,3 +35,16 @@ class UserList(Resource):
         db.session.add(new_user)
         db.session.commit()
         return {'message': 'User added successfully'}, 201
+    
+    @api.doc('login')
+    @api.param('name', 'Name of user')
+    @api.param('password', 'Password of the user')
+    def login(self, name, password):
+        """Log into the database with the given credentials"""
+        user = User.query(User).filter(User.user_name == name)
+        if not user:
+            return {'message': 'No user with the name <"' + name + '"> exist in the database'}, 404
+        if user.user_name != password:
+            return {'message': 'The password did not match'}, 404
+        #should do a cache to keep the user id
+        return {'message', 'Successful connection'}, 201
