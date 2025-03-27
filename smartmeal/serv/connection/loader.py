@@ -7,7 +7,7 @@ db = SQLAlchemy()
 
 def init_db(app):
     """Initialize the database connection"""
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:0000@localhost:5432/smartmeal'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:123456789@localhost:5432/testsmeal'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     db.init_app(app)
     
