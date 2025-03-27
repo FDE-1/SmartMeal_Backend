@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: smartmeal-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: postgresql://smartmeal_user:baZzRniR0qrDiTltJg25ilvQZpX4xFC7@dpg-cviqd18gjchc73artb4g-a.frankfurt-postgres.render.com/smartmeal_db
+        fromDatabase:
+          name: smartmeal-db
+          property: connectionString
