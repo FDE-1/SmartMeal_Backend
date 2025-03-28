@@ -35,16 +35,24 @@ class UserList(Resource):
         db.session.add(new_user)
         db.session.commit()
         return {'message': 'User added successfully'}, 201
-    
+
+@api.route('/login')
+class LoginResource(Resource):
     @api.doc('login')
-    @api.param('name', 'Name of user')
-    @api.param('password', 'Password of the user')
-    def login(self, name, password):
+    @api.param('name', 'Name of user', _in='query')
+    @api.param('password', 'Password of the user', _in='query')
+    def get(self):
         """Log into the database with the given credentials"""
-        user = User.query(User).filter(User.user_name == name)
+        name = request.args.get('name')
+        password = request.args.get('password')
+
+        if not name or not password:
+            return {'message': 'Both name and password are required'}, 400
+
+        user = User.query.filter_by(user_name=name).first()
         if not user:
-            return {'message': 'No user with the name <"' + name + '"> exist in the database'}, 404
-        if user.user_name != password:
-            return {'message': 'The password did not match'}, 404
-        #should do a cache to keep the user id
-        return {'message', 'Successful connection'}, 201
+            return {'message': f'No user with the name "{name}" exists in the database'}, 404
+        if user.password != password:
+            return {'message': 'The password did not match'}, 401
+
+        return {'message': 'Successful connection'}, 200

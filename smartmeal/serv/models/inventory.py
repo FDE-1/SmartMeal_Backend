@@ -7,3 +7,4 @@ class Inventory(db.Model):
     ustensils = db.Column(db.ARRAY(db.JSON))
     grocery = db.Column(db.ARRAY(db.JSON))
     fresh_produce = db.Column(db.ARRAY(db.JSON))
+

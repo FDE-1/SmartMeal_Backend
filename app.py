@@ -11,6 +11,7 @@ from smartmeal.serv.connection.loader import init_db, db
 from smartmeal.serv.endpoints.user_routes import api as user_ns
 from smartmeal.serv.endpoints.recipe_routes import api as recipe_ns
 from smartmeal.serv.endpoints.preferences_routes import api as preferences_ns
+from smartmeal.serv.endpoints.inventory_routes import api as inventory_ns
 
 app = Flask(__name__)
 
@@ -34,6 +35,7 @@ api = Api(
 api.add_namespace(user_ns)
 api.add_namespace(recipe_ns)
 api.add_namespace(preferences_ns)
+api.add_namespace(inventory_ns)
 
 if __name__ == '__main__':
     app.run(debug=True)
