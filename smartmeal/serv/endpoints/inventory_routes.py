@@ -66,3 +66,18 @@ class InventoryResource(Resource):
             'grocery': inventory.grocery,
             'fresh_produce': inventory.fresh_produce
         }, 200
+    
+    @api.doc('get_inventory_by_user')
+    def get(self, user_id):
+        """Retrieve inventory by user ID"""
+        inventory = Inventory.query.filter_by(user_id=user_id).first()
+        if not inventory:
+            return {'message': 'Inventory not found for this user'}, 404
+
+        return {
+            'inventory_id': inventory.inventory_id,
+            'user_id': inventory.user_id,
+            'ustensils': inventory.ustensils,
+            'grocery': inventory.grocery,
+            'fresh_produce': inventory.fresh_produce
+        }, 200
