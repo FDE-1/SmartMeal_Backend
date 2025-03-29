@@ -67,6 +67,9 @@ class InventoryResource(Resource):
             'fresh_produce': inventory.fresh_produce
         }, 200
     
+@api.route('/user/<int:user_id>')
+@api.param('user_id', 'User ID')
+class InventoryResource(Resource):
     @api.doc('get_inventory_by_user')
     def get(self, user_id):
         """Retrieve inventory by user ID"""
