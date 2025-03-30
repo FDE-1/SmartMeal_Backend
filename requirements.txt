@@ -5,3 +5,4 @@ Flask-SQLAlchemy
 python-dotenv 
 flask_restx 
 flask_cors
+requests
