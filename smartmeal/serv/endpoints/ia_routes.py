@@ -41,7 +41,7 @@ def get_meal_plan_from_ollama():
     }
 
     try:
-        response = requests.post(url, json=data, timeout=60)
+        response = requests.post(url, json=data, timeout=600)
         response.raise_for_status()
         result = response.json()["response"]
         print("Réponse brute d'Ollama :", result)
