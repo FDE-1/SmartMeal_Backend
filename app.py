@@ -13,6 +13,7 @@ from smartmeal.serv.endpoints.user_routes import api as user_ns
 from smartmeal.serv.endpoints.recipe_routes import api as recipe_ns
 from smartmeal.serv.endpoints.preferences_routes import api as preferences_ns
 from smartmeal.serv.endpoints.inventory_routes import api as inventory_ns
+from smartmeal.serv.endpoints.ia_routes import api as ia
 
 app = Flask(__name__)
 
@@ -40,6 +41,7 @@ api.add_namespace(user_ns)
 api.add_namespace(recipe_ns)
 api.add_namespace(preferences_ns)
 api.add_namespace(inventory_ns)
+api.add_namespace(ia)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')  # Allow external access
