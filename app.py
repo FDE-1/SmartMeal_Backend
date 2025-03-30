@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_restx import Api
+from flask_cors import CORS
 from pathlib import Path
 import sys
 
@@ -14,6 +15,9 @@ from smartmeal.serv.endpoints.preferences_routes import api as preferences_ns
 from smartmeal.serv.endpoints.inventory_routes import api as inventory_ns
 
 app = Flask(__name__)
+
+# Enable CORS for all origins
+CORS(app)  # Allows any fetch request from any origin
 
 # Initialize database
 init_db(app)
@@ -38,4 +42,4 @@ api.add_namespace(preferences_ns)
 api.add_namespace(inventory_ns)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')  # Allow external access
