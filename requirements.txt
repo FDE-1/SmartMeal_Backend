@@ -4,4 +4,4 @@ psycopg2-binary
 Flask-SQLAlchemy 
 python-dotenv 
 flask_restx 
-CORS
+flask_cors
