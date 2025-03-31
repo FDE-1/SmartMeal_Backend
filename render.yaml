@@ -3,7 +3,7 @@ services:
     name: smartmeal-api
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn --workers 4 --timeout 1200 app:app
     envVars:
       - key: postgresql://smartmeal_user:baZzRniR0qrDiTltJg25ilvQZpX4xFC7@dpg-cviqd18gjchc73artb4g-a.frankfurt-postgres.render.com/smartmeal_db
         fromDatabase:
