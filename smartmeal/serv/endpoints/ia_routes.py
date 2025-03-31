@@ -18,7 +18,7 @@ meal_model = api.model('Meal', {
 
 # Fonction pour appeler Ollama avec le modèle deepseek-r1
 def get_meal_plan_from_ollama():
-    url = "http://aff9-2a0d-e487-145f-67f3-1c50-b39c-ef51-20a1.ngrok-free.app/api/generate"
+    url = "http://6a7d-163-5-3-68.ngrok-free.app/api/generate"
     prompt = """
     Génère un plan de repas pour une semaine (Lundi à Samedi) pour une personne. 
     Pour chaque jour, propose 1 à 2 repas avec une liste d'items (plats ou aliments), 
