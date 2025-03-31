@@ -5,16 +5,46 @@ from ..models.recipe import Recipe
 import requests
 import json
 import re
+import threading
+from functools import wraps
+from datetime import datetime
 
 api = Namespace('weekly_meals', description='Weekly meal operations')
 
 # Modèle de réponse attendu pour chaque repas
+job_cache = {}
 meal_model = api.model('Meal', {
     'items': fields.List(fields.String, required=True, description='List of food items'),
     'calories': fields.Integer(required=True, description='Total calories'),
     'servings': fields.Integer(required=True, description='Number of servings'),
     'time': fields.Integer(required=True, description='Preparation time in minutes')
 })
+
+
+def async_llm_call(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        job_id = str(datetime.now().timestamp())
+        job_cache[job_id] = {"status": "processing", "created_at": datetime.now()}
+        
+        def task():
+            try:
+                result = f(*args, **kwargs)
+                job_cache[job_id] = {
+                    "status": "completed",
+                    "result": result,
+                    "completed_at": datetime.now()
+                }
+            except Exception as e:
+                job_cache[job_id] = {
+                    "status": "failed",
+                    "error": str(e),
+                    "failed_at": datetime.now()
+                }
+        
+        threading.Thread(target=task).start()
+        return {"job_id": job_id, "status_url": f"/status/{job_id}"}, 202
+    return wrapper
 
 # Fonction pour appeler Ollama avec le modèle deepseek-r1
 def get_meal_plan_from_ollama():
@@ -71,10 +101,10 @@ def get_meal_plan_from_ollama():
 @api.route('/')
 class WeeklyMealPlan(Resource):
     @api.doc('get_weekly_meal_plan')
+    @async_llm_call
     def get(self):
-        """Get a weekly meal plan for a person"""
-        meal_plan = get_meal_plan_from_ollama()
-        return jsonify(meal_plan)
+        """Get a weekly meal plan (async)"""
+        return get_meal_plan_from_ollama()
 
 # Exemple d'intégration avec la base de données (optionnel)
 @api.route('/from-db')

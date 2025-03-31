@@ -6,3 +6,5 @@ python-dotenv
 flask_restx 
 flask_cors
 requests
+functools
+datetime
