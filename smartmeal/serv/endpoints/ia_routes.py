@@ -126,3 +126,20 @@ class WeeklyMealPlanFromDB(Resource):
             "Samedi": [{"items": [recipes[5 % len(recipes)].recipe_name], "calories": 300, "servings": 3, "time": recipes[5 % len(recipes)].recipe_preparation_time}]
         }
         return jsonify(sample_plan)
+    
+
+@api.route('/status/<string:job_id>')
+class JobStatus(Resource):
+    @api.doc('check_job_status')
+    def get(self, job_id):
+        """Check job status"""
+        job = job_cache.get(job_id)
+        if not job:
+            return {"error": "Job not found"}, 404
+        
+        if job["status"] == "completed":
+            return jsonify(job["result"])
+        elif job["status"] == "failed":
+            return {"error": job["error"]}, 500
+        else:
+            return {"status": "processing"}, 102
