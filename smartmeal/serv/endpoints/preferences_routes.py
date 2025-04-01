@@ -123,7 +123,17 @@ class PreferenceResource(Resource):
                 preference.language = data['language']
             
             db.session.commit()
-            return preference.to_dict()
+            return {
+                    'preference_id': preference.preference_id,
+                    'user_id': preference.user_id,
+                    'allergy': preference.allergy,
+                    'diet': preference.diet,
+                    'goal': preference.goal,
+                    'new': preference.new,
+                    'number_of_meals': preference.number_of_meals,
+                    'grocery_day': preference.grocery_day,
+                    'language': preference.language
+                }, 200
             
         except IntegrityError as e:
             db.session.rollback()
