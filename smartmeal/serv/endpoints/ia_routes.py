@@ -76,10 +76,11 @@ def get_meal_plan_from_ollama():
         result = response.json()["response"]
         print("Réponse brute d'Ollama :", result)
 
-        # Extraire la partie JSON avec une expression régulière
-        json_match = re.search(r'```json\s*(.*?)\s*```', result, re.DOTALL)
+       # Extraire le JSON en tenant compte des balises <think> ou autres contenus
+        # Recherche d'un bloc JSON valide entre accolades principales
+        json_match = re.search(r'\{[\s\S]*\}', result)
         if json_match:
-            json_str = json_match.group(1)  # Récupère uniquement le contenu entre ```json et ```
+            json_str = json_match.group(0)  # Récupère le bloc JSON complet
             print("JSON extrait :", json_str)
             meal_plan = json.loads(json_str)
         else:
