@@ -35,18 +35,31 @@ class InventoryListResource(Resource):
     def post(self):
         """Create a new inventory entry"""
         data = request.get_json()
+        
+        if not data:
+            return {'error': 'No input data provided'}, 400
+        if 'user_id' not in data:
+            return {'error': 'user_id is required'}, 400
 
-        new_inventory = Inventory(
-            user_id=data['user_id'],
-            ustensils=data.get('ustensils', []),
-            grocery=data.get('grocery', []),
-            fresh_produce=data.get('fresh_produce', [])
-        )
+        try:
+            new_inventory = Inventory(
+                user_id=data['user_id'],
+                ustensils=data.get('ustensils', []),
+                grocery=data.get('grocery', []),
+                fresh_produce=data.get('fresh_produce', [])
+            )
 
-        db.session.add(new_inventory)
-        db.session.commit()
+            db.session.add(new_inventory)
+            db.session.commit()
 
-        return {'message': 'Inventory added successfully', 'inventory_id': new_inventory.inventory_id}, 201
+            return {
+                'message': 'Inventory added successfully',
+                'inventory_id': new_inventory.inventory_id
+            }, 201
+            
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Failed to create inventory', 'details': str(e)}, 500
 
 
 @api.route('/<int:inventory_id>')
