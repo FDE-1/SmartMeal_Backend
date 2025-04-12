@@ -24,17 +24,39 @@ class UserList(Resource):
     @api.expect(user_model)
     def post(self):
         """Create a new user"""
-        data = request.json
-        
-        new_user = User(
-            user_name=data['user_name'],
-            user_surname=data['user_surname'],
-            user_email=data['user_email'],
-            user_password=data['user_password']
-        )
-        db.session.add(new_user)
-        db.session.commit()
-        return {'message': 'User added successfully'}, 201
+        try:
+            data = request.json
+            if not data:
+                return {'message': 'No input data provided'}, 400
+
+            required_fields = ['user_name', 'user_surname', 'user_email', 'user_password']
+            if not all(field in data for field in required_fields):
+                return {'message': 'Missing required fields'}, 400
+
+            if User.query.filter_by(user_email=data['user_email']).first():
+                return {'message': 'Email already exists'}, 409
+
+            new_user = User(
+                user_name=data['user_name'],
+                user_surname=data['user_surname'],
+                user_email=data['user_email'],
+                user_password=data['user_password']
+            )
+
+            db.session.add(new_user)
+            db.session.commit()
+            
+            return {
+                'message': 'User created successfully',
+                'user_id': new_user.user_id
+            }, 201
+
+        except Exception as e:
+            db.session.rollback()
+            return {
+                'message': 'Failed to create user',
+                'error': str(e)
+            }, 500
 
 @api.route('/login')
 class LoginResource(Resource):
