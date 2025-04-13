@@ -60,7 +60,6 @@ def generate_meal_plan():
     
     return meal_plan
 
-# Fonction pour générer une liste de courses
 def generate_shopping_list(meal_plan):
     ingredients_set = {}
     
