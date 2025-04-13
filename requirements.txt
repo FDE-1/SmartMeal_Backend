@@ -7,3 +7,6 @@ flask_restx
 flask_cors
 requests
 pandas
+tensorflow
+pickle
+random
