@@ -1,4 +1,5 @@
 import os
+
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 from flask import jsonify, request
 from flask_restx import Namespace, Resource, fields
@@ -100,7 +101,6 @@ the_meal_plan = generate_meal_plan()
 @api.route('/meal_plan')
 class WeeklyMealPlan(Resource):
     @api.doc('get_weekly_meal_plan')
-    @async_llm_call
     def get(self):
         """Get a weekly meal plan (async)"""
         the_meal_plan = generate_meal_plan()
@@ -108,7 +108,6 @@ class WeeklyMealPlan(Resource):
 @api.route('/furniture')
 class ShoppingList(Resource):
     @api.doc('get_furniture')
-    @async_llm_call
     def get(self):
         """Get a shopping list based on the weekly meal plan (async)"""
         #meal_plan = get_meal_plan_from_ollama()  # Récupère le plan de repas
