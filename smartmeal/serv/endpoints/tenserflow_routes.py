@@ -26,16 +26,20 @@ class WeeklyMealPlan(Resource):
 class ShoppingList(Resource):
     @api.doc('get_furniture')
     def post(self):
-        """Obtenir une liste de courses basée sur un plan de repas"""
+        """Obtenir une liste de courses basée sur le plan de repas fourni dans le corps de la requête"""
         try:
-            # Récupérer d'abord un plan de repas
-            meal_plan_response = requests.get(f'{API_BASE_URL}/meal_plan')
-            meal_plan_response.raise_for_status()
-            meal_plan = meal_plan_response.json()
+            if not request.is_json:
+                return {'error': 'Le corps de la requête doit être au format JSON'}, 400
             
-            # Envoyer le plan de repas à l'endpoint shopping_list
+            meal_plan = request.get_json()
+            if not meal_plan:
+                return {'error': 'Aucun plan de repas fourni'}, 400
+            
+            # Envoyer le plan de repas fourni à l'endpoint shopping_list
             response = requests.post(f'{API_BASE_URL}/shopping_list', json=meal_plan)
             response.raise_for_status()
             return response.json()
         except requests.RequestException as e:
             return {'error': f'Erreur lors de l\'appel à l\'API: {str(e)}'}, 500
+        except ValueError as e:
+            return {'error': f'JSON invalide: {str(e)}'}, 400
