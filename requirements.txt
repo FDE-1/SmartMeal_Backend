@@ -8,5 +8,3 @@ flask_cors
 requests
 pandas
 tensorflow
-pickle
-random
