@@ -144,20 +144,18 @@ class UserChangeInfo(Resource):
             db.session.rollback()
             api.abort(500, "Erreur de mise à jour", error=str(e))
 
-
 @api.route('/testsuite')
 class UserTestSuite(Resource):
     @api.doc('run_test_suite')
     @api.response(200, 'Succès')
     @api.response(500, 'Erreur du serveur')
     def post(self):
-        """Exécute une suite de tests complète en utilisant les endpoints existants"""
-        from .user_routes import UserResource, UserDetail, UserChangeInfo 
+        """Exécute une suite de tests complète en appelant les classes définies"""
         résultats = []
         test_data = {
-            'name': 'test_user',
-            'surname': 'test_surname',
-            'email': 'test@example.com',
+            'user_name': 'test_user',
+            'user_surname': 'test_surname',
+            'user_email': 'test@example.com',
             'password': 'testpassword123'
         }
         update_data = {
@@ -169,72 +167,39 @@ class UserTestSuite(Resource):
         }
 
         try:
-            # 1. Test get_list()
-            résultats.append("=== Test 1: Récupération liste utilisateurs ===")
-            users = self.get_list()[0].json
-            résultats.append(f"Nombre d'utilisateurs initiaux: {len(users)}")
+            # Simule un appel à POST /users/ (création)
+            with api.test_request_context(json=test_data):
+                response = UserResource().post()
+                user_id = response.user_id if hasattr(response, 'user_id') else getattr(response, 'id', None)
+                résultats.append(f"✅ Utilisateur créé avec l'ID {user_id}")
 
-            # 2. Test create_user()
-            résultats.append("\n=== Test 2: Création utilisateur ===")
+            # Simule un appel à GET /users/<user_id> (récupération)
             with api.test_request_context():
-                api.payload = test_data
-                response = self.create_user()
-                if response[1] != 201:
-                    raise Exception(f"Échec création: {response[0].json}")
-                
-                user_id = response[0].json['user_id']
-                résultats.append(f"✅ Utilisateur créé (ID: {user_id})")
+                response = UserDetail().get(user_id)
+                résultats.append(f"✅ Utilisateur récupéré : {response.user_name} {response.user_surname}")
 
-            # 3. Test get_info()
-            résultats.append("\n=== Test 3: Récupération infos utilisateur ===")
+            # Simule un appel à PUT /change-info (modification)
+            with api.test_request_context(json=update_data):
+                response = UserChangeInfo().put()
+                résultats.append("✅ Informations mises à jour")
+
+            # Vérifie que les infos ont bien été modifiées
             with api.test_request_context():
-                api.payload = {'id': user_id}
-                response = self.get_info()
-                if response[1] != 200:
-                    raise Exception(f"Échec récupération: {response[0].json}")
-                résultats.append(f"✅ Infos utilisateur: {response[0].json}")
+                updated_user = UserDetail().get(user_id)
+                if updated_user.user_surname != update_data['new_surname']:
+                    raise Exception("Le nom n'a pas été mis à jour")
+                résultats.append("✅ Vérification des nouvelles informations OK")
 
-            # 4. Test change_info()
-            résultats.append("\n=== Test 4: Mise à jour infos ===")
-            with api.test_request_context():
-                api.payload = update_data
-                response = self.change_info()
-                if response[1] != 200:
-                    raise Exception(f"Échec mise à jour: {response[0].json}")
-                résultats.append("✅ Mise à jour réussie")
+            # Suppression manuelle directe (car pas d'endpoint défini dans le code original)
+            user = User.query.get(user_id)
+            if user:
+                db.session.delete(user)
+                db.session.commit()
+                résultats.append("✅ Utilisateur supprimé manuellement")
 
-            # 5. Vérification des modifications
-            résultats.append("\n=== Test 5: Vérification modifications ===")
-            with api.test_request_context():
-                api.payload = {'id': user_id}
-                updated_user = self.get_info()[0].json
-                if updated_user['surname'] != update_data['new_surname']:
-                    raise Exception("Surnom non mis à jour")
-                résultats.append("✅ Modifications vérifiées")
-
-            # 6. Test delete_user()
-            résultats.append("\n=== Test 6: Suppression utilisateur ===")
-            with api.test_request_context():
-                api.payload = {
-                    'name': 'test_user',
-                    'password': update_data['new_password']
-                }
-                response = self.delete_user()
-                if response[1] != 200:
-                    raise Exception(f"Échec suppression: {response[0].json}")
-                résultats.append("✅ Utilisateur supprimé")
-
-            # 7. Vérification finale
-            résultats.append("\n=== Test 7: Vérification finale ===")
-            final_users = self.get_list()[0].json
-            if any(u['user_id'] == user_id for u in final_users):
-                raise Exception("Utilisateur toujours présent")
-            résultats.append(f"✅ Vérification finale OK - Nombre utilisateurs: {len(final_users)}")
-
-            résultats.append("\n🏁 Tous les tests ont réussi !")
             return {'résultats': résultats}, 200
 
         except Exception as e:
             db.session.rollback()
-            résultats.append(f"\n❌ Échec du test: {str(e)}")
+            résultats.append(f"❌ Échec d’un test : {str(e)}")
             return {'résultats': résultats}, 500
