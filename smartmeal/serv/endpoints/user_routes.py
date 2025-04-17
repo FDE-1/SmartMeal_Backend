@@ -144,7 +144,7 @@ class UserChangeInfo(Resource):
             db.session.rollback()
             api.abort(500, "Erreur de mise à jour", error=str(e))
 
-            
+
 @api.route('/testsuite')
 class UserTestSuite(Resource):
     @api.doc('run_test_suite')
@@ -152,6 +152,7 @@ class UserTestSuite(Resource):
     @api.response(500, 'Erreur du serveur')
     def post(self):
         """Exécute une suite de tests complète en utilisant les endpoints existants"""
+        from .user_routes import UserResource, UserDetail, UserChangeInfo 
         résultats = []
         test_data = {
             'name': 'test_user',
