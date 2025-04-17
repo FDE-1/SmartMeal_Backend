@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import jsonify, request, current_app
 from ..connection.loader import db
 from ..models.user import User
 from flask_restx import Namespace, Resource, fields
@@ -144,6 +144,7 @@ class UserChangeInfo(Resource):
             db.session.rollback()
             api.abort(500, "Erreur de mise à jour", error=str(e))
 
+
 @api.route('/testsuite')
 class UserTestSuite(Resource):
     @api.doc('run_test_suite')
@@ -177,28 +178,28 @@ class UserTestSuite(Resource):
             }
 
             # === Test 1: Création utilisateur ===
-            with api.test_request_context(json=test_user):
-                response = UserResource().post()
-                user_id = response.user_id if hasattr(response, 'user_id') else getattr(response, 'id', None)
-                résultats.append(f"✅ Utilisateur créé avec ID : {response.user_id}")
+            with current_app.test_request_context(json=test_user):
+                response, code = UserResource().post()
+                user_id = response.user_id
+                résultats.append(f"✅ Utilisateur créé avec ID : {user_id}")
 
             # === Test 2: Authentification ===
-            with api.test_request_context(json=login_payload):
+            with current_app.test_request_context(json=login_payload):
                 login_response = UserLogin().post()
                 résultats.append("✅ Authentification réussie")
 
             # === Test 3: Récupération utilisateur par ID ===
-            with api.test_request_context():
+            with current_app.test_request_context():
                 user_data = UserDetail().get(user_id)
                 résultats.append(f"✅ Données récupérées : {user_data.user_name} {user_data.user_surname}")
 
             # === Test 4: Mise à jour des informations ===
-            with api.test_request_context(json=update_payload):
+            with current_app.test_request_context(json=update_payload):
                 change_response = UserChangeInfo().put()
                 résultats.append("✅ Mise à jour réussie")
 
             # === Test 5: Vérification de la mise à jour ===
-            with api.test_request_context():
+            with current_app.test_request_context():
                 updated_user = UserDetail().get(user_id)
                 if updated_user.user_surname != update_payload['new_surname']:
                     raise Exception("Nom non mis à jour")
@@ -206,7 +207,7 @@ class UserTestSuite(Resource):
                     raise Exception("Email non mis à jour")
                 résultats.append("✅ Informations vérifiées après mise à jour")
 
-            # === Nettoyage : suppression directe (aucune route DELETE dans l'API actuelle) ===
+            # === Nettoyage : suppression directe (pas de route DELETE définie) ===
             user = User.query.get(user_id)
             if user:
                 db.session.delete(user)
