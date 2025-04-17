@@ -2,7 +2,8 @@ from flask import jsonify, request, current_app
 from ..connection.loader import db
 from ..models.user import User
 from flask_restx import Namespace, Resource, fields
-
+from sqlalchemy import text
+import time
 api = Namespace('users', description='Opérations utilisateur')
 
 # Modèles Swagger
@@ -49,33 +50,33 @@ class UserResource(Resource):
     @api.marshal_with(user_model, code=201)
     def post(self):
         """Crée un nouvel utilisateur"""
+        data = api.payload
+
+        if not data:
+            api.abort(400, "Aucune donnée reçue")
+
+        required_fields = ['user_name', 'user_surname', 'user_email', 'password']
+        if not all(field in data for field in required_fields):
+            api.abort(400, "Champs requis manquants")
+
+        if User.query.filter_by(user_email=data['user_email']).first():
+            api.abort(409, "Email déjà utilisé")
+
         try:
-            data = api.payload
-            
-            if not data:
-                api.abort(400, "Aucune donnée reçue")
-            
-            required_fields = ['user_name', 'user_surname', 'user_email', 'password']
-            if not all(field in data for field in required_fields):
-                api.abort(400, "Champs requis manquants")
-            
-            if User.query.filter_by(user_email=data['user_email']).first():
-                api.abort(409, "Email déjà utilisé")
-            
             new_user = User(
                 user_name=data['user_name'],
                 user_surname=data['user_surname'],
                 user_email=data['user_email'],
                 user_password=data['password']
             )
-            
             db.session.add(new_user)
             db.session.commit()
             return new_user, 201
-            
+
         except Exception as e:
             db.session.rollback()
-            api.abort(500, "Erreur de création", error=str(e))
+            api.abort(500, "Erreur de création (interne)", error=str(e))
+
 
 @api.route('/<int:user_id>')
 @api.param('user_id', 'ID utilisateur')
@@ -99,7 +100,7 @@ class UserDetail(Resource):
             if not user:
                 api.abort(404, "Utilisateur non trouvé")
 
-            db.session.delete(user)
+            db.session.delete(user)        
             db.session.commit()
             return {'message': f'Utilisateur {user_id} supprimé'}, 200
 
@@ -122,7 +123,7 @@ class UserLogin(Resource):
             if not user:
                 api.abort(404, "Utilisateur non trouvé")
             
-            if not user.user_password!= data['password']:
+            if user.user_password!= data['password']:
                 api.abort(401, "Mot de passe incorrect")
             
             return {'message': 'Authentification réussie'}, 200
@@ -163,9 +164,9 @@ class UserChangeInfo(Resource):
             api.abort(500, "Erreur de mise à jour", error=str(e))
 
 
-
 @api.route('/testsuite')
 class UserTestSuite(Resource):
+    
     @api.doc('run_test_suite')
     @api.response(200, 'Succès')
     @api.response(500, 'Erreur du serveur')
@@ -174,6 +175,12 @@ class UserTestSuite(Resource):
         résultats = []
         user_id = None
 
+        def unpack_response(resp):
+            """Permet de gérer les retours tuple ou simple objet"""
+            if isinstance(resp, tuple):
+                time.sleep(0.2)
+                return resp[0], resp[1]
+            return resp, 200
         try:
             # === Données de test ===
             test_user = {
@@ -196,79 +203,73 @@ class UserTestSuite(Resource):
                 'new_password': 'newpassword123'
             }
 
-            # === Test 1: Création utilisateur ===
+            # === Test 1: Création utilisateur (ou récupération si déjà existant) ===
             with current_app.test_request_context(json=test_user):
-                response = UserResource().post()
-                if isinstance(response, tuple):
-                    user_obj, status_code = response
-                else:
-                    user_obj = response
-                    status_code = 200
-                user_id = user_obj.user_id
-                résultats.append(f"✅ Utilisateur créé avec ID : {user_id}")
+                try:
+                    response = UserResource().post()
+                    user_obj, _ = unpack_response(response)
+                    user_id = (
+                        user_obj.user_id if hasattr(user_obj, 'user_id')
+                        else user_obj['user_id']
+                    )
+                    résultats.append(f"✅ Utilisateur créé avec ID : {user_id}")
+                except Exception as e:
+                    user = User.query.filter_by(user_email=test_user['user_email']).first()
+                    user_id = user.user_id
+                    résultats.append(f"⚠️ Utilisateur existant détecté, ID récupéré : {user_id} + Exception: {e}")
 
             # === Test 2: Authentification ===
             with current_app.test_request_context(json=login_payload):
-                response = UserLogin().post()
-                if isinstance(response, tuple):
-                    _, status_code = response
-                else:
-                    status_code = 200
+                _, status_code = unpack_response(UserLogin().post())
                 if status_code != 200:
                     raise Exception("Échec de l'authentification")
                 résultats.append("✅ Authentification réussie")
 
-            # === Test 3: Récupération utilisateur par ID ===
+            # === Test 3: Récupération utilisateur ===
             with current_app.test_request_context():
-                response = UserDetail().get(user_id)
-                if isinstance(response, tuple):
-                    user_obj, status_code = response
-                else:
-                    user_obj = response
-                    status_code = 200
-                résultats.append(f"✅ Données récupérées : {user_obj.user_name} {user_obj.user_surname}")
+                user_obj, _ = unpack_response(UserDetail().get(user_id))
+                résultats.append(f"✅ Données récupérées : {user_obj}")
 
-            # === Test 4: Mise à jour des informations ===
+            # === Test 4: Mise à jour ===
             with current_app.test_request_context(json=update_payload):
-                response = UserChangeInfo().put()
-                if isinstance(response, tuple):
-                    _, status_code = response
-                else:
-                    status_code = 200
+                _, status_code = unpack_response(UserChangeInfo().put())
                 if status_code != 200:
                     raise Exception("Échec de la mise à jour")
                 résultats.append("✅ Mise à jour réussie")
 
             # === Test 5: Vérification de la mise à jour ===
             with current_app.test_request_context():
-                response = UserDetail().get(user_id)
-                if isinstance(response, tuple):
-                    updated_user, _ = response
-                else:
-                    updated_user = response
+                updated_user, _ = unpack_response(UserDetail().get(user_id))
 
-                if updated_user.user_surname != update_payload['new_surname']:
+                surname = (
+                    updated_user.user_surname if hasattr(updated_user, 'user_surname')
+                    else updated_user['user_surname']
+                )
+                email = (
+                    updated_user.user_email if hasattr(updated_user, 'user_email')
+                    else updated_user['user_email']
+                )
+
+                if surname != update_payload['new_surname']:
                     raise Exception("Nom non mis à jour")
-                if updated_user.user_email != update_payload['new_email']:
+                if email != update_payload['new_email']:
                     raise Exception("Email non mis à jour")
+
                 résultats.append("✅ Informations vérifiées après mise à jour")
 
-            # === Test 6: Suppression de l'utilisateur ===
+            # === Test 6: Suppression via API ===
             with current_app.test_request_context():
-                response = UserDetail().delete(user_id)
-                if isinstance(response, tuple):
-                    _, status_code = response
-                else:
-                    status_code = 200
+                _, status_code = unpack_response(UserDetail().delete(user_id))
                 if status_code != 200:
                     raise Exception("Échec de la suppression")
                 résultats.append("✅ Utilisateur supprimé via l'API")
-
-
+                
             résultats.append("\n🏁 Tous les tests ont réussi !")
             return {'résultats': résultats}, 200
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             db.session.rollback()
             résultats.append(f"\n❌ Erreur pendant les tests : {str(e)}")
-            return {'résultats': résultats}, 50
+            return {'résultats': résultats}, 500
