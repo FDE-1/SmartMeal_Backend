@@ -150,56 +150,73 @@ class UserTestSuite(Resource):
     @api.response(200, 'Succès')
     @api.response(500, 'Erreur du serveur')
     def post(self):
-        """Exécute une suite de tests complète en appelant les classes définies"""
+        """Exécute une suite de tests complète en appelant les autres ressources"""
         résultats = []
-        test_data = {
-            'user_name': 'test_user',
-            'user_surname': 'test_surname',
-            'user_email': 'test@example.com',
-            'password': 'testpassword123'
-        }
-        update_data = {
-            'name': 'test_user',
-            'new_surname': 'updated_surname',
-            'new_email': 'updated@example.com',
-            'old_password': 'testpassword123',
-            'new_password': 'newpassword123'
-        }
+        user_id = None
 
         try:
-            # Simule un appel à POST /users/ (création)
-            with api.test_request_context(json=test_data):
+            # === Données de test ===
+            test_user = {
+                'user_name': 'test_user',
+                'user_surname': 'test_surname',
+                'user_email': 'test@example.com',
+                'password': 'testpassword123'
+            }
+
+            login_payload = {
+                'name': test_user['user_name'],
+                'password': test_user['password']
+            }
+
+            update_payload = {
+                'name': test_user['user_name'],
+                'new_surname': 'updated_surname',
+                'new_email': 'updated@example.com',
+                'old_password': test_user['password'],
+                'new_password': 'newpassword123'
+            }
+
+            # === Test 1: Création utilisateur ===
+            with api.test_request_context(json=test_user):
                 response = UserResource().post()
                 user_id = response.user_id if hasattr(response, 'user_id') else getattr(response, 'id', None)
-                résultats.append(f"✅ Utilisateur créé avec l'ID {user_id}")
+                résultats.append(f"✅ Utilisateur créé avec ID : {response.user_id}")
 
-            # Simule un appel à GET /users/<user_id> (récupération)
+            # === Test 2: Authentification ===
+            with api.test_request_context(json=login_payload):
+                login_response = UserLogin().post()
+                résultats.append("✅ Authentification réussie")
+
+            # === Test 3: Récupération utilisateur par ID ===
             with api.test_request_context():
-                response = UserDetail().get(user_id)
-                résultats.append(f"✅ Utilisateur récupéré : {response.user_name} {response.user_surname}")
+                user_data = UserDetail().get(user_id)
+                résultats.append(f"✅ Données récupérées : {user_data.user_name} {user_data.user_surname}")
 
-            # Simule un appel à PUT /change-info (modification)
-            with api.test_request_context(json=update_data):
-                response = UserChangeInfo().put()
-                résultats.append("✅ Informations mises à jour")
+            # === Test 4: Mise à jour des informations ===
+            with api.test_request_context(json=update_payload):
+                change_response = UserChangeInfo().put()
+                résultats.append("✅ Mise à jour réussie")
 
-            # Vérifie que les infos ont bien été modifiées
+            # === Test 5: Vérification de la mise à jour ===
             with api.test_request_context():
                 updated_user = UserDetail().get(user_id)
-                if updated_user.user_surname != update_data['new_surname']:
-                    raise Exception("Le nom n'a pas été mis à jour")
-                résultats.append("✅ Vérification des nouvelles informations OK")
+                if updated_user.user_surname != update_payload['new_surname']:
+                    raise Exception("Nom non mis à jour")
+                if updated_user.user_email != update_payload['new_email']:
+                    raise Exception("Email non mis à jour")
+                résultats.append("✅ Informations vérifiées après mise à jour")
 
-            # Suppression manuelle directe (car pas d'endpoint défini dans le code original)
+            # === Nettoyage : suppression directe (aucune route DELETE dans l'API actuelle) ===
             user = User.query.get(user_id)
             if user:
                 db.session.delete(user)
                 db.session.commit()
                 résultats.append("✅ Utilisateur supprimé manuellement")
 
+            résultats.append("\n🏁 Tous les tests ont réussi !")
             return {'résultats': résultats}, 200
 
         except Exception as e:
             db.session.rollback()
-            résultats.append(f"❌ Échec d’un test : {str(e)}")
+            résultats.append(f"\n❌ Erreur pendant les tests : {str(e)}")
             return {'résultats': résultats}, 500
