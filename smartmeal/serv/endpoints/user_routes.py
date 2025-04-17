@@ -204,9 +204,7 @@ class UserList(Resource):
             }, 500
         
 
-@api.route('/testsuite')
-class TestSuite(Resource):
-    @api.doc('run_test_suite')
+    @api.doc('run_test_suite', method=["POST"])
     def post(self):
         """Exécute une suite de tests complète en utilisant les endpoints existants"""
         résultats_tests = []
