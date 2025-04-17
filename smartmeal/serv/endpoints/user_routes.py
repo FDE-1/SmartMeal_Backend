@@ -88,6 +88,24 @@ class UserDetail(Resource):
         if not user:
             api.abort(404, "Utilisateur non trouvé")
         return user
+    
+    @api.doc('delete_user')
+    @api.response(200, 'Utilisateur supprimé')
+    @api.response(404, 'Utilisateur non trouvé')
+    def delete(self, user_id):
+        """Supprime un utilisateur par son ID"""
+        try:
+            user = User.query.get(user_id)
+            if not user:
+                api.abort(404, "Utilisateur non trouvé")
+
+            db.session.delete(user)
+            db.session.commit()
+            return {'message': f'Utilisateur {user_id} supprimé'}, 200
+
+        except Exception as e:
+            db.session.rollback()
+            api.abort(500, "Erreur lors de la suppression", error=str(e))
 
 @api.route('/login')
 class UserLogin(Resource):
@@ -145,6 +163,7 @@ class UserChangeInfo(Resource):
             api.abort(500, "Erreur de mise à jour", error=str(e))
 
 
+
 @api.route('/testsuite')
 class UserTestSuite(Resource):
     @api.doc('run_test_suite')
@@ -179,40 +198,72 @@ class UserTestSuite(Resource):
 
             # === Test 1: Création utilisateur ===
             with current_app.test_request_context(json=test_user):
-                response, code = UserResource().post()
-                user_id = response.user_id
+                response = UserResource().post()
+                if isinstance(response, tuple):
+                    user_obj, status_code = response
+                else:
+                    user_obj = response
+                    status_code = 200
+                user_id = user_obj.user_id
                 résultats.append(f"✅ Utilisateur créé avec ID : {user_id}")
 
             # === Test 2: Authentification ===
             with current_app.test_request_context(json=login_payload):
-                login_response = UserLogin().post()
+                response = UserLogin().post()
+                if isinstance(response, tuple):
+                    _, status_code = response
+                else:
+                    status_code = 200
+                if status_code != 200:
+                    raise Exception("Échec de l'authentification")
                 résultats.append("✅ Authentification réussie")
 
             # === Test 3: Récupération utilisateur par ID ===
             with current_app.test_request_context():
-                user_data = UserDetail().get(user_id)
-                résultats.append(f"✅ Données récupérées : {user_data.user_name} {user_data.user_surname}")
+                response = UserDetail().get(user_id)
+                if isinstance(response, tuple):
+                    user_obj, status_code = response
+                else:
+                    user_obj = response
+                    status_code = 200
+                résultats.append(f"✅ Données récupérées : {user_obj.user_name} {user_obj.user_surname}")
 
             # === Test 4: Mise à jour des informations ===
             with current_app.test_request_context(json=update_payload):
-                change_response = UserChangeInfo().put()
+                response = UserChangeInfo().put()
+                if isinstance(response, tuple):
+                    _, status_code = response
+                else:
+                    status_code = 200
+                if status_code != 200:
+                    raise Exception("Échec de la mise à jour")
                 résultats.append("✅ Mise à jour réussie")
 
             # === Test 5: Vérification de la mise à jour ===
             with current_app.test_request_context():
-                updated_user = UserDetail().get(user_id)
+                response = UserDetail().get(user_id)
+                if isinstance(response, tuple):
+                    updated_user, _ = response
+                else:
+                    updated_user = response
+
                 if updated_user.user_surname != update_payload['new_surname']:
                     raise Exception("Nom non mis à jour")
                 if updated_user.user_email != update_payload['new_email']:
                     raise Exception("Email non mis à jour")
                 résultats.append("✅ Informations vérifiées après mise à jour")
 
-            # === Nettoyage : suppression directe (pas de route DELETE définie) ===
-            user = User.query.get(user_id)
-            if user:
-                db.session.delete(user)
-                db.session.commit()
-                résultats.append("✅ Utilisateur supprimé manuellement")
+            # === Test 6: Suppression de l'utilisateur ===
+            with current_app.test_request_context():
+                response = UserDetail().delete(user_id)
+                if isinstance(response, tuple):
+                    _, status_code = response
+                else:
+                    status_code = 200
+                if status_code != 200:
+                    raise Exception("Échec de la suppression")
+                résultats.append("✅ Utilisateur supprimé via l'API")
+
 
             résultats.append("\n🏁 Tous les tests ont réussi !")
             return {'résultats': résultats}, 200
@@ -220,4 +271,4 @@ class UserTestSuite(Resource):
         except Exception as e:
             db.session.rollback()
             résultats.append(f"\n❌ Erreur pendant les tests : {str(e)}")
-            return {'résultats': résultats}, 500
+            return {'résultats': résultats}, 50
