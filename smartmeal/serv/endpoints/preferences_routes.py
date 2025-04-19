@@ -70,14 +70,19 @@ class PreferenceList(Resource):
     
 @api.route('/id')
 class PreferenceById(Resource):
-    @api.expect(preference_id_model)
+    @api.doc('get_preference')
+    @api.doc(params={'user_id': 'ID de l\'utilisateur'}) 
     def get(self):
-        """Recupere la preference selon user_id"""
+        """Récupère les préférences d'un utilisateur"""
         try:
-            data = api.payload
-            preference = Preferences.query.filter_by(user_id=data['user_id']).first()       
+            user_id = request.args.get('user_id', type=int)  # Get from URL ?user_id=123
+            if not user_id:
+                return {'message': 'Paramètre user_id manquant'}, 400
+
+            preference = Preferences.query.filter_by(user_id=user_id).first()
             if not preference:
-                return {'message': 'Preference pas trouvé'}, 404
+                return {'message': 'Préférence non trouvée'}, 404
+
             return {
                 'preference_id': preference.preference_id,
                 'user_id': preference.user_id,
@@ -88,10 +93,10 @@ class PreferenceById(Resource):
                 'number_of_meals': preference.number_of_meals,
                 'grocery_day': preference.grocery_day,
                 'language': preference.language
-            },200
+            }, 200
         except Exception as e:
             db.session.rollback()
-            api.abort(500, "Erreur lors de la supprésion", error=str(e))
+            api.abort(500, "Erreur lors de la récupération", error=str(e))
 
     @api.expect(update_model)
     def put(self):
@@ -199,7 +204,7 @@ class PreferenceTestSuite(Resource):
                 résultats.append(f"✅ Préférences créées avec ID : {preference_id}")
 
             # === Test 2: Récupération par user_id ===
-            with current_app.test_request_context(json={"user_id": test_user_id}):
+            with current_app.test_request_context(query_string={"user_id": test_user_id}): 
                 response = PreferenceById().get()
                 data, status_code = unpack_response(response)
                 if status_code != 200:
@@ -224,7 +229,7 @@ class PreferenceTestSuite(Resource):
                 résultats.append("✅ Mise à jour partielle effectuée")
 
             # === Test 4: Vérification fusion allergies ===
-            with current_app.test_request_context(json={"user_id": test_user_id}):
+            with current_app.test_request_context(query_string={"user_id": test_user_id}): 
                 response = PreferenceById().get()
                 updated, _ = unpack_response(response)
                 allergies = updated['allergy']

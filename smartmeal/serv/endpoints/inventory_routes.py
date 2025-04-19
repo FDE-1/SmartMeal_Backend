@@ -81,12 +81,14 @@ class InventoryListResource(Resource):
 @api.route('/inventories')
 class InventoryResource(Resource):
     @api.doc('get_inventory')
-    @api.expect(seach_model)
+    @api.doc(params={'inventory_id': 'Identifiant unique de l\'inventaire'})
     def get(self):
-        """Récupère un inventoraire"""
+        """Récupère un inventaire par son ID (via query parameter)"""
         try:
-            data = api.payload
-            inventory_id = data['inventory_id']
+            inventory_id = request.args.get('inventory_id', type=int) 
+            if not inventory_id:
+                return {'message': 'Paramètre inventory_id manquant'}, 400
+
             inventory = Inventory.query.get(inventory_id)
             if not inventory:
                 return {'message': 'Inventaire pas trouvé'}, 404
@@ -100,7 +102,7 @@ class InventoryResource(Resource):
             }, 200
         except Exception as e:
             db.session.rollback()
-            api.abort(500, "Erreur lors de la création d'un inventaire", error=str(e))
+            api.abort(500, "Erreur lors de la récupération de l'inventaire", error=str(e))
 
     @api.doc('update_inventory')
     @api.expect(update_model)
@@ -167,22 +169,24 @@ class InventoryResource(Resource):
             api.abort(500, "Erreur lors de la supprésion", error=str(e))
 
     
-
-@api.route('/by_user')
+@api.route('/by_user/<int:user_id>')
 class InventoryResourceUser(Resource):
     @api.doc('get_inventory_by_user')
-    @api.expect(search_user_model)
-    def get(self):
+    def get(self, user_id):
         """Retrieve inventory by user ID"""
         try:
-            data = api.payload
-            user_id = data['user_id']
-            print(user_id)
-            inv = Inventory.query.filter_by(user_id=user_id).first()
-            return inv,200
+            inventory = Inventory.query.filter_by(user_id=user_id).first()
+            if not inventory:
+                return {'message': 'Inventory not found'}, 404
+            return {
+            'inventory_id': inventory.inventory_id,
+            'user_id': inventory.user_id,
+            'ustensils': inventory.ustensils,
+            'grocery': inventory.grocery,
+            'fresh_produce': inventory.fresh_produce
+             }, 200
         except Exception as e:
-            db.session.rollback()
-            api.abort(500, "Erreur lors de la supprésion", error=str(e))
+            return {'message': str(e)}, 500
 
 @api.route('/testsuite')
 class InventoryTestSuite(Resource):
@@ -219,8 +223,8 @@ class InventoryTestSuite(Resource):
                 résultats.append(f"✅ Inventaire créé avec ID : {inventory_id}")
 
             # === Test 2: Récupération par ID ===
-            with current_app.test_request_context(json={"user_id": user_id}):
-                response = InventoryResourceUser().get()
+            with current_app.test_request_context(path=f'/by_user/{user_id}'):  # Match the route path
+                response = InventoryResourceUser().get(user_id)  # Pass user_id as argument
                 data, status_code = unpack_response(response)
                 if status_code != 200:
                     raise Exception("Échec de récupération par ID")
@@ -241,10 +245,10 @@ class InventoryTestSuite(Resource):
                 résultats.append("✅ Mise à jour effectuée avec succès")
 
             # === Test 4: Vérification update ===
-            with current_app.test_request_context(json={"inventory_id": inventory_id}):
+            with current_app.test_request_context(query_string={"inventory_id": inventory_id}):  # Changed from json to query_string
                 response = InventoryResource().get()
                 updated, _ = unpack_response(response)
-                grocery = updated['grocery']
+                grocery = updated['grocery']               
                 banana_exists = any(item['name'] == 'banana' and item['quantity'] == 5 for item in updated['fresh_produce'])
                 rice_updated = any(item['name'] == 'rice' and item['quantity'] == 8 for item in grocery)
                 if not (banana_exists and rice_updated):
