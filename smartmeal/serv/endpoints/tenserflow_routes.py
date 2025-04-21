@@ -9,7 +9,7 @@ import threading
 from functools import wraps
 api = Namespace('tenserflow', description='Test TenserFlow')
 
-API_BASE_URL = 'http://1db8-2a01-cb0d-60e-a700-8457-9272-1c01-7bae.ngrok-free.app'
+API_BASE_URL = 'http://d418-2a01-cb0d-60e-a700-1dc1-5139-26d0-dce3.ngrok-free.app'
 
 @api.route('/meal_plan')
 class WeeklyMealPlan(Resource):
