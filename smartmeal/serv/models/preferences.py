@@ -1,10 +1,10 @@
 from ..connection.loader import db
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 
 class Preferences(db.Model):
     preference_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=True)
-    allergy = db.Column(ARRAY(db.Text))    
+    allergy = db.Column(JSONB)    
     diet = db.Column(db.Text)
     goal = db.Column(db.Text)
     new = db.Column(db.Integer)
