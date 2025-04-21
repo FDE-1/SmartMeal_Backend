@@ -12,7 +12,7 @@ user_model = api.model('User', {
     'user_name': fields.String(required=True, description='Prénom'),
     'user_surname': fields.String(required=True, description='Nom'),
     'user_email': fields.String(required=True, description='Email'),
-    'password': fields.String(required=True, description='Mot de passe')
+    'user_password': fields.String(required=True, description='Mot de passe')
 })
 
 login_model = api.model('Login', {
