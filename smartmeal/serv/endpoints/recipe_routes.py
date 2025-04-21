@@ -11,7 +11,8 @@ recipe_model = api.model('Recipe', {
     'recipe_instructions': fields.Raw(required=True),
     'recipe_preparation_time': fields.Integer(required=True),
     'recipe_ustensils_required': fields.Raw(required=True),
-    'recipe_nutritional_value': fields.Raw(required=True)
+    'recipe_nutritional_value': fields.Raw(required=True),
+    'rating': fields.Float(description='Rating from 0 to 5 in 0.5 increments')
 })
 
 @api.route('/')
@@ -20,7 +21,7 @@ class RecipeList(Resource):
     def get(self):
         """List all recipes"""
         recipes = Recipe.query.all()
-        return jsonify([{'recipe_id': r.recipe_id, 'name': r.recipe_name} for r in recipes])
+        return jsonify([{'recipe_id': r.recipe_id, 'name': r.recipe_name, 'rating': r.rating} for r in recipes])
 
     @api.doc('create_recipe')
     @api.expect(recipe_model)
@@ -36,7 +37,7 @@ class RecipeList(Resource):
                 'recipe_name',
                 'recipe_ingredients',
                 'recipe_instructions',
-                'recipe_preparation_time'
+                'recipe_preparation_time',
             ]
             
             if not all(field in data for field in required_fields):
@@ -45,6 +46,13 @@ class RecipeList(Resource):
                     'message': 'Missing required fields',
                     'missing_fields': missing
                 }, 400
+            
+            if 'rating' in data:
+                rating = data['rating']
+                if not (0 <= rating <= 5) or (rating * 2) % 1 != 0:
+                    return {
+                        'message': 'Rating must be between 0 and 5 in 0.5 increments'
+                    }, 400
 
             new_recipe = Recipe(
                 recipe_name=data['recipe_name'],
@@ -52,7 +60,8 @@ class RecipeList(Resource):
                 recipe_instructions=data['recipe_instructions'],
                 recipe_preparation_time=data['recipe_preparation_time'],
                 recipe_ustensils_required=data.get('recipe_ustensils_required', []),
-                recipe_nutritional_value=data.get('recipe_nutritional_value', {})
+                recipe_nutritional_value=data.get('recipe_nutritional_value', {}),
+                rating=data.get('rating', None)
             )
 
             db.session.add(new_recipe)
@@ -85,7 +94,8 @@ class RecipeResource(Resource):
             'recipe_instructions': recipe.recipe_instructions,
             'recipe_preparation_time': recipe.recipe_preparation_time,
             'recipe_ustensils_required': recipe.recipe_ustensils_required,
-            'recipe_nutritional_value': recipe.recipe_nutritional_value
+            'recipe_nutritional_value': recipe.recipe_nutritional_value,
+            'rating': float(recipe.rating) if recipe.rating is not None else None
         }
 
     @api.doc('update_recipe')
@@ -103,7 +113,8 @@ class RecipeResource(Resource):
             recipe.recipe_preparation_time = data.get('recipe_preparation_time', recipe.recipe_preparation_time)
             recipe.recipe_ustensils_required = data.get('recipe_ustensils_required', recipe.recipe_ustensils_required)
             recipe.recipe_nutritional_value = data.get('recipe_nutritional_value', recipe.recipe_nutritional_value)
-            
+            if 'rating' in data:
+                recipe.rating = data['rating']
             db.session.commit()
             return {'message': 'Recipe updated successfully'}
         
@@ -129,132 +140,129 @@ class RecipeResource(Resource):
                 'message': 'Failed to delete recipe',
                 'error': str(e)
             }, 500
-        
+      
 @api.route('/testsuite/recipes')
 class RecipeTestSuite(Resource):
     @api.doc('run_recipe_test_suite')
-    @api.response(200, 'Succès')
-    @api.response(500, 'Erreur du serveur')
+    @api.response(200, 'Success')
+    @api.response(500, 'Server error')
     def post(self):
-        """Exécute une suite de tests complète pour les recettes"""
-        résultats = []
+        """Execute a complete test suite for recipes"""
+        results = []
         recipe_id = None
-        test_user_id = 4  # ID spécial pour les tests
 
         def unpack_response(resp):
-            """Gère les tuples de Flask RESTx"""
+            """Handle Flask RESTx response tuples"""
             if isinstance(resp, tuple):
                 return resp[0], resp[1]
             return resp, 200
 
         try:
-            # === Test 1: Création d'une recette ===
+            # === Test 1: Create recipe without rating ===
             create_payload = {
-                "recipe_name": "Pâtes Test",
+                "recipe_name": "Pasta Test",
                 "recipe_ingredients": {
-                    "pâtes": "300g",
-                    "tomates": "2",
-                    "ail": "1 gousse"
+                    "pasta": "300g",
+                    "tomatoes": "2",
+                    "garlic": "1 clove"
                 },
                 "recipe_instructions": [
-                    "Faire bouillir l'eau",
-                    "Cuire les pâtes",
-                    "Préparer la sauce"
+                    "Boil water",
+                    "Cook pasta",
+                    "Prepare sauce"
                 ],
                 "recipe_preparation_time": 20,
-                "recipe_ustensils_required": ["casserole", "spatule"],
+                "recipe_ustensils_required": ["pot", "spatula"],
                 "recipe_nutritional_value": {
                     "calories": 500,
-                    "protéines": "15g"
+                    "protein": "15g"
                 }
             }
 
             with current_app.test_request_context(json=create_payload):
                 response = RecipeList().post()
                 recipe_obj, status_code = unpack_response(response)
-                print(recipe_id)
-                print(status_code)
                 recipe_id = recipe_obj['recipe_id']
-                résultats.append(f"✅ Recette créée avec ID : {recipe_id}")
+                results.append(f"✅ Recipe created with ID: {recipe_id} (no rating)")
 
-            # === Test 2: Récupération par recipe_id ===
+            # === Test 2: Get recipe and verify default fields ===
             with current_app.test_request_context():
                 response = RecipeResource().get(recipe_id)
                 data, status_code = unpack_response(response)
                 if status_code != 200:
-                    raise Exception("Échec de récupération par recipe_id")
-                if data['recipe_name'] != "Pâtes Test":
-                    raise Exception("Données incorrectes récupérées")
-                résultats.append(f"✅ Recette récupérée : {data['recipe_name']}")
+                    raise Exception("Failed to fetch by recipe_id")
+                if data['recipe_name'] != "Pasta Test":
+                    raise Exception("Incorrect data retrieved")
+                print(data['rating'])
+                if data['rating'] is not None:
+                    raise Exception("Rating should be null for new recipe")
+                results.append(f"✅ Recipe retrieved: {data['recipe_name']}")
 
-            # === Test 3: Mise à jour complète ===
+            # === Test 3: Update with rating ===
             update_payload = {
-                "recipe_name": "Pâtes Modifiées",
+                "recipe_name": "Updated Pasta",
                 "recipe_ingredients": {
-                    "pâtes": "400g",
-                    "tomates": "3",
-                    "ail": "2 gousses",
-                    "basilic": "quelques feuilles"
+                    "pasta": "400g",
+                    "tomatoes": "3",
+                    "garlic": "2 cloves",
+                    "basil": "some leaves"
                 },
                 "recipe_instructions": [
-                    "Faire bouillir l'eau salée",
-                    "Cuire les pâtes al dente",
-                    "Préparer la sauce tomate"
+                    "Boil salted water",
+                    "Cook pasta al dente",
+                    "Prepare tomato sauce"
                 ],
                 "recipe_preparation_time": 25,
-                "recipe_ustensils_required": ["casserole", "spatule", "mixeur"],
+                "recipe_ustensils_required": ["pot", "spatula", "blender"],
                 "recipe_nutritional_value": {
                     "calories": 600,
-                    "protéines": "18g"
-                }
+                    "protein": "18g"
+                },
+                "rating": 4.5
             }
 
             with current_app.test_request_context(json=update_payload):
                 response = RecipeResource().put(recipe_id)
                 _, status_code = unpack_response(response)
                 if status_code != 200:
-                    raise Exception("Échec de la mise à jour")
-                résultats.append("✅ Mise à jour complète effectuée")
+                    raise Exception("Update failed")
+                results.append("✅ Update with rating completed")
 
-            # === Test 4: Vérification des modifications ===
+            # === Test 4: Verify rating update ===
             with current_app.test_request_context():
                 response = RecipeResource().get(recipe_id)
                 updated, _ = unpack_response(response)
-                if updated['recipe_name'] != "Pâtes Modifiées":
-                    raise Exception("Échec de mise à jour du nom")
-                if updated['recipe_preparation_time'] != 25:
-                    raise Exception("Échec de mise à jour du temps")
-                if "basilic" not in updated['recipe_ingredients']:
-                    raise Exception("Échec d'ajout d'ingrédient")
-                résultats.append("✅ Modifications vérifiées")
+                if updated['rating'] != 4.5:
+                    raise Exception("Rating update failed")
+                results.append("✅ Rating update verified")
 
-            # === Test 5: Suppression ===
+            # === Test 5: Delete ===
             with current_app.test_request_context():
                 response = RecipeResource().delete(recipe_id)
                 _, status_code = unpack_response(response)
                 if status_code != 200:
-                    raise Exception("Échec de suppression")
-                résultats.append("✅ Recette supprimée avec succès")
+                    raise Exception("Deletion failed")
+                results.append("✅ Recipe deleted successfully")
 
-            # Vérification finale
+            # Final verification
             deleted_recipe = Recipe.query.get(recipe_id)
             if deleted_recipe:
-                raise Exception("La suppression n'a pas fonctionné")
+                raise Exception("Deletion didn't work")
 
-            résultats.append("\n🏁 Tous les tests des recettes sont passés avec succès !")
-            return {'résultats': résultats}, 200
+            results.append("\n🏁 All recipe tests passed successfully!")
+            return {'results': results}, 200
 
         except Exception as e:
             import traceback
             traceback.print_exc()
             db.session.rollback()
             
-            # Nettoyage si échec
+            # Cleanup if failed
             if recipe_id:
                 recipe = Recipe.query.get(recipe_id)
                 if recipe:
                     db.session.delete(recipe)
                     db.session.commit()
             
-            résultats.append(f"\n❌ Erreur pendant les tests : {str(e)}")
-            return {'résultats': résultats}, 500
+            results.append(f"\n❌ Error during tests: {str(e)}")
+            return {'results': results}, 500

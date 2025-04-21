@@ -9,3 +9,4 @@ class Recipe(db.Model):
     recipe_preparation_time = db.Column(db.Integer)
     recipe_ustensils_required = db.Column(db.JSON)
     recipe_nutritional_value = db.Column(db.JSON)
+    rating = db.Column(db.Numeric(2,1))
