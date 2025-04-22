@@ -45,7 +45,7 @@ class PreferenceList(Resource):
            
             new_preference = Preferences(
                 user_id=data['user_id'],
-                allergy=data.get('allergy', []),  
+                allergy=data.get('allergy', {}),
                 diet=data.get('diet', ''),
                 goal=data.get('goal', ''),
                 new=data.get('new', 1),
@@ -100,45 +100,34 @@ class PreferenceById(Resource):
 
     @api.expect(update_model)
     def put(self):
-        """Met à jour la préférence selon l'utilisateur id, et ajoute les nouvelles allergies sans dupliquer"""
+        """Met à jour la préférence selon l'utilisateur id, et remplace entièrement les allergies"""
         try:
             data = api.payload
-            
+
             if not data:
                 return {'message': 'Aucune donnée reçue'}, 400
             if 'preference_id' not in data:
                 return {'message': 'preference_id est requis'}, 400
 
             preference = Preferences.query.filter_by(preference_id=data['preference_id']).first()
-            if not preference:
-                return {'message': 'Préférence pas trouvée'}, 404
-            # print("before" + str(preference.allergy))
-            current_app.logger.debug(f"Before update - Allergy: {preference.allergy} | Diet: {preference.diet}")
+            if 'user_id' in data:
+                preference.user_id = data['user_id']
+            if 'allergy' in data:
+                preference.allergy = data['allergy']
+            if 'diet' in data:
+                preference.diet = data['diet']
+            if 'goal' in data:
+                preference.goal = data['goal']
+            if 'new' in data:
+                preference.new = data['new']
+            if 'number_of_meals' in data:
+                preference.number_of_meals = data['number_of_meals']
+            if 'grocery_day' in data:
+                preference.grocery_day = data['grocery_day']
+            if 'language' in data:
+                preference.language = data['language']
 
-            for key, value in data.items():
-                if key == 'preference_id':
-                    continue  
-                    
-                if key == 'allergy':
-                    if not isinstance(value, list):
-                        return {'message': 'Le champ allergy doit être une liste de chaînes'}, 400
-                    
-                    existing_allergies = preference.allergy or []
-                    new_allergies = [a for a in value if a not in existing_allergies]
-                    preference.allergy = existing_allergies + new_allergies
-                else:
-                    setattr(preference, key, value)
-
-            # print("after" + str(preference.allergy))
-
-            db.session.flush()  
             db.session.commit()
-            # updated_pref = db.session.query(Preferences).filter_by(
-            #                 preference_id=data['preference_id']
-            #             ).first()
-                        
-            # if updated_pref.allergy != preference.allergy:
-            #     raise RuntimeError("La mise à jour n'a pas persisté en base de données")
 
             return {
                 'message': 'Préférence mise à jour',
@@ -152,6 +141,7 @@ class PreferenceById(Resource):
             db.session.rollback()
             current_app.logger.error(f"Erreur mise à jour préférence: {str(e)}\n{traceback.format_exc()}")
             return {'message': 'Erreur lors de la mise à jour', 'error': str(e)}, 500
+
     
     @api.expect(preference_id_model)
     def delete(self):
@@ -188,7 +178,11 @@ class PreferenceTestSuite(Resource):
             # === Test 1: Création des préférences ===
             create_payload = {
                 "user_id": test_user_id,
-                "allergy": ["gluten", "lactose"],
+                "allergy": {
+                    "gluten": True,
+                    "lactose": True,
+                    "fruits de mer": True
+                },
                 "diet": "vegetarian",
                 "goal": "weight_loss",
                 "new": 1,
@@ -216,14 +210,20 @@ class PreferenceTestSuite(Resource):
             # === Test 3: Mise à jour partielle ===
             update_payload = {
                 "preference_id": preference_id,
-                "allergy": ["fruits de mer"],
+                "allergy": {
+                    "gluten": False,
+                    "lactose": False,
+                    "fruits de mer": False
+                },
                 "goal": "muscle_gain",
                 "number_of_meals": 4
             }
 
             with current_app.test_request_context(json=update_payload):
                 response = PreferenceById().put()
-                _, status_code = unpack_response(response)
+                tmp, status_code = unpack_response(response)
+                print(tmp)
+                print(status_code)
                 if status_code != 200:
                     raise Exception("Échec de la mise à jour")
                 résultats.append("✅ Mise à jour partielle effectuée")
@@ -233,9 +233,13 @@ class PreferenceTestSuite(Resource):
                 response = PreferenceById().get()
                 updated, _ = unpack_response(response)
                 allergies = updated['allergy']
-                print(allergies)
-                if not (set(allergies) == {"gluten", "lactose", "fruits de mer"}):
-                    raise Exception("Échec de la fusion des allergies")
+                expected_allergy = {
+                    "gluten": False,
+                    "lactose": False,
+                    "fruits de mer": False
+                }
+                if updated['allergy'] != expected_allergy:
+                    raise Exception("Échec de la fusion ou des valeurs des allergies")
                 if updated['number_of_meals'] != 4:
                     raise Exception("Échec de mise à jour des repas")
                 résultats.append("✅ Fusion des allergies et mise à jour vérifiée")

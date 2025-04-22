@@ -12,7 +12,7 @@ user_model = api.model('User', {
     'user_name': fields.String(required=True, description='Prénom'),
     'user_surname': fields.String(required=True, description='Nom'),
     'user_email': fields.String(required=True, description='Email'),
-    'password': fields.String(required=True, description='Mot de passe')
+    'user_password': fields.String(required=True, description='Mot de passe')
 })
 
 login_model = api.model('Login', {
@@ -21,7 +21,7 @@ login_model = api.model('Login', {
 })
 
 change_info_model = api.model('ChangeInfo', {
-    'name': fields.String(required=True, description="Nom d'utilisateur"),
+    'new_name': fields.String(description="Nom d'utilisateur"),
     'new_surname': fields.String(description="Nouveau nom"),
     'new_email': fields.String(description="Nouvel email"),
     'old_password': fields.String(required=True, description="Ancien mot de passe"),
@@ -131,24 +131,25 @@ class UserLogin(Resource):
         except Exception as e:
             api.abort(500, "Erreur d'authentification", error=str(e))
 
-@api.route('/change-info')
+@api.route('/change-info/<int:user_id>')
 class UserChangeInfo(Resource):
     @api.doc('change_info')
     @api.expect(change_info_model)
-    def put(self):
+    def put(self, user_id):
         """Modifie les informations utilisateur"""
         try:
             data = api.payload
-            if not all(key in data for key in ['name', 'old_password']):
+            if not all(key in data for key in ['old_password']):
                 api.abort(400, "Informations manquantes")
             
-            user = User.query.filter_by(user_name=data['name']).first()
+            user = User.query.get(user_id)
             if not user:
                 api.abort(404, "Utilisateur non trouvé")
             
             if user.user_password!= data['old_password']:
                 api.abort(401, "Mot de passe incorrect")
-            
+            if 'new_name' in data:
+                user.user_name = data['new_name']
             if 'new_surname' in data:
                 user.user_surname = data['new_surname']
             if 'new_email' in data:
@@ -196,7 +197,7 @@ class UserTestSuite(Resource):
             }
 
             update_payload = {
-                'name': test_user['user_name'],
+                'new_name': test_user['user_name'],
                 'new_surname': 'updated_surname',
                 'new_email': 'updated@example.com',
                 'old_password': test_user['password'],
@@ -232,7 +233,7 @@ class UserTestSuite(Resource):
 
             # === Test 4: Mise à jour ===
             with current_app.test_request_context(json=update_payload):
-                _, status_code = unpack_response(UserChangeInfo().put())
+                _, status_code = unpack_response(UserChangeInfo().put(user_id))
                 if status_code != 200:
                     raise Exception("Échec de la mise à jour")
                 résultats.append("✅ Mise à jour réussie")

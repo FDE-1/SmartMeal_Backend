@@ -15,6 +15,7 @@ from smartmeal.serv.endpoints.preferences_routes import api as preferences_ns
 from smartmeal.serv.endpoints.inventory_routes import api as inventory_ns
 from smartmeal.serv.endpoints.ia_routes import api as ia
 from smartmeal.serv.endpoints.tenserflow_routes import api as tenserflow
+from smartmeal.serv.endpoints.user_recipe_routes import api as user_recipe
 
 
 app = Flask(__name__)
@@ -45,6 +46,7 @@ api.add_namespace(preferences_ns)
 api.add_namespace(inventory_ns)
 api.add_namespace(ia)
 api.add_namespace(tenserflow)
+api.add_namespace(user_recipe)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')  # Allow external access
