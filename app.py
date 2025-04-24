@@ -16,7 +16,8 @@ from smartmeal.serv.endpoints.inventory_routes import api as inventory_ns
 from smartmeal.serv.endpoints.ia_routes import api as ia
 from smartmeal.serv.endpoints.tenserflow_routes import api as tenserflow
 from smartmeal.serv.endpoints.user_recipe_routes import api as user_recipe
-
+from smartmeal.serv.endpoints.shopping_list_routes import api as shopping_list
+from smartmeal.serv.endpoints.week_route import api as week
 
 app = Flask(__name__)
 
@@ -47,6 +48,8 @@ api.add_namespace(inventory_ns)
 api.add_namespace(ia)
 api.add_namespace(tenserflow)
 api.add_namespace(user_recipe)
+api.add_namespace(shopping_list)
+api.add_namespace(week)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')  # Allow external access

@@ -115,25 +115,28 @@ class InventoryResource(Resource):
             if not inventory:
                 api.abort(404, "Inventaire non trouvé")
 
-            def update_items(existing, new_items):
-                if not new_items:
-                    return existing or []
+            # def update_items(existing, new_items):
+            #     if not new_items:
+            #         return existing or []
                 
-                existing = existing or []
-                item_map = {item['name']: item for item in existing}
+            #     existing = existing or []
+            #     item_map = {item['name']: item for item in existing}
                 
-                for item in new_items:
-                    name = item['name']
-                    if name in item_map:
-                        item_map[name]['quantity'] = item_map[name].get('quantity', 0) + item.get('quantity', 1)
-                    else:
-                        item_map[name] = item
-                return list(item_map.values())
+            #     for item in new_items:
+            #         name = item['name']
+            #         if name in item_map:
+            #             item_map[name]['quantity'] = item_map[name].get('quantity', 0) + item.get('quantity', 1)
+            #         else:
+            #             item_map[name] = item
+            #     return list(item_map.values())
 
-            inventory.ustensils = update_items(inventory.ustensils, data.get('ustensils'))
-            inventory.grocery = update_items(inventory.grocery, data.get('grocery'))
-            inventory.fresh_produce = update_items(inventory.fresh_produce, data.get('fresh_produce'))
-
+            # inventory.ustensils = update_items(inventory.ustensils, data.get('ustensils'))
+            # inventory.grocery = update_items(inventory.grocery, data.get('grocery'))
+            # inventory.fresh_produce = update_items(inventory.fresh_produce, data.get('fresh_produce'))
+            
+            inventory.ustensils = data.get('ustensils', [])
+            inventory.grocery = data.get('grocery', [])
+            inventory.fresh_produce = data.get('fresh_produce', [])
             db.session.flush()  
             db.session.commit()
             
