@@ -55,7 +55,7 @@ class UserResource(Resource):
         if not data:
             api.abort(400, "Aucune donnée reçue")
 
-        required_fields = ['user_name', 'user_surname', 'user_email', 'password']
+        required_fields = ['user_name', 'user_surname', 'user_email', 'user_password']
         if not all(field in data for field in required_fields):
             api.abort(400, "Champs requis manquants")
 
@@ -67,7 +67,7 @@ class UserResource(Resource):
                 user_name=data['user_name'],
                 user_surname=data['user_surname'],
                 user_email=data['user_email'],
-                user_password=data['password']
+                user_password=data['user_password']
             )
             db.session.add(new_user)
             db.session.commit()
