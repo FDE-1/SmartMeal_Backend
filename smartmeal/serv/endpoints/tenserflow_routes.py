@@ -217,6 +217,6 @@ class FakeWeeklyMealPlan(Resource):
         }
     ]
 } 
-            return response.json()
+            return jsonify(response)
         except requests.RequestException as e:
             return {'error': f'Erreur lors de l\'appel à l\'API: {str(e)}'}, 500
