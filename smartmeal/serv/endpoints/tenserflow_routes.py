@@ -220,3 +220,75 @@ class FakeWeeklyMealPlan(Resource):
             return jsonify(response)
         except requests.RequestException as e:
             return {'error': f'Erreur lors de l\'appel à l\'API: {str(e)}'}, 500
+        
+
+
+@api.route('/fake_furniture_list')
+class FakeFurniture(Resource):
+    @api.doc('fake_furniture_list')
+    def get(self):
+        """Obtenir un plan de repas hebdomadaire depuis l'API"""
+        try:
+            #response = requests.get(f'{API_BASE_URL}/meal_plan')
+            #response.raise_for_status()  # Vérifie les erreurs HTTP
+            response = {
+    "pineapple": "4 rondelles",
+    "eggplant": "2 unités",
+    "chinese eggplant": "1 unité",
+    "fresh basil leaves": "120ml",
+    "chicken or vegetable broth": "960ml",
+    "celery": "80ml",
+    "lemon juice": "30ml",
+    "lime juice": "15ml",
+    "lemongrass": "1 tige",
+    "persian cucumbers": "454g",
+    "fresh cilantro leaves": "135ml",
+    "ground coriander": "2.5ml",
+    "light sour cream": "120ml",
+    "large or jumbo shrimp": "567g",
+    "ground cumin": "12.5ml",
+    "water": "120ml",
+    "shallot": "1 unité",
+    "pork shoulder": "2722-3629g",
+    "all-purpose flour": "",
+    "grated cheese": "120ml",
+    "fresh ginger": "1 morceau de 2.54cm",
+    "garlic cloves": "7 unités",
+    "white beans": "226g",
+    "olive oil": "90ml",
+    "canola oil": "30ml",
+    "sunflower oil": "",
+    "ketchup": "150ml",
+    "coconut milk": "180ml",
+    "mango": "1 unité",
+    "marjoram": "",
+    "mozzarella": "227g",
+    "buckwheat udon noodles": "454g",
+    "green onions": "105ml",
+    "fresh oregano leaves": "petit tas",
+    "pancetta": "113g",
+    "grated parmesan": "45ml",
+    "prepared pizza dough": "454g",
+    "green thai chili": "1 unité",
+    "cayenne pepper": "2.5ml",
+    "black pepper": "7.5ml",
+    "yellow bell pepper": "1 unité",
+    "roasted red peppers": "200ml",
+    "garlic powder": "10ml",
+    "fish sauce": "30ml",
+    "soy sauce": "30ml",
+    "tomato sauce": "180ml",
+    "canned salmon": "170g",
+    "fresh sage leaves": "6 feuilles",
+    "salt": "3.75ml",
+    "sugar": "17.5ml",
+    "fresh thyme leaves": "5ml",
+    "flour tortillas": "8 unités",
+    "cider vinegar": "360ml",
+    "greek yogurt": "45ml",
+    "lime zest": "10ml"
+}
+            return jsonify(response)
+        except requests.RequestException as e:
+            return {'error': f'Erreur lors de l\'appel à l\'API: {str(e)}'}, 500
+        
