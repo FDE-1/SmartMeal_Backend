@@ -65,8 +65,15 @@ class MealPlanPref(Resource):
         except ValueError as e:
             return {'error': f'JSON invalide: {str(e)}'}, 400
 
-
-json_pour_video={
+@api.route('/fake_meal_plan')
+class FakeWeeklyMealPlan(Resource):
+    @api.doc('fake_meal_plan')
+    def get(self):
+        """Obtenir un plan de repas hebdomadaire depuis l'API"""
+        try:
+            #response = requests.get(f'{API_BASE_URL}/meal_plan')
+            #response.raise_for_status()  # Vérifie les erreurs HTTP
+            response = {
     "Friday": [
         {
             "calories": 576,
@@ -209,17 +216,7 @@ json_pour_video={
             "time": 24
         }
     ]
-}
-
-@api.route('/fake_meal_plan')
-class FakeWeeklyMealPlan(Resource):
-    @api.doc('fake_meal_plan')
-    def get(self):
-        """Obtenir un plan de repas hebdomadaire depuis l'API"""
-        try:
-            #response = requests.get(f'{API_BASE_URL}/meal_plan')
-            #response.raise_for_status()  # Vérifie les erreurs HTTP
-            response = json_pour_video
+} 
             return response.json()
         except requests.RequestException as e:
             return {'error': f'Erreur lors de l\'appel à l\'API: {str(e)}'}, 500
