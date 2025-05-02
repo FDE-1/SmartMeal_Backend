@@ -24,26 +24,32 @@ class WeeklyMealPlan(Resource):
             return {'error': f'Erreur lors de l\'appel à l\'API: {str(e)}'}, 500
 @api.route('/furniture')
 class ShoppingList(Resource):
-    @api.doc('get_furniture')
+    @api.doc('get_shopping_list')
     def post(self):
-        """Obtenir une liste de courses basée sur le plan de repas fourni dans le corps de la requête"""
+        """Obtenir une liste de courses basée sur le plan de repas et l'inventaire fournis dans le corps de la requête"""
         try:
             if not request.is_json:
                 return {'error': 'Le corps de la requête doit être au format JSON'}, 400
             
-            meal_plan = request.get_json()
-            if not meal_plan:
+            data = request.get_json()
+            if not data or 'meal_plan' not in data:
                 return {'error': 'Aucun plan de repas fourni'}, 400
             
-            # Envoyer le plan de repas fourni à l'endpoint shopping_list
-            response = requests.post(f'{API_BASE_URL}/shopping_list', json=meal_plan)
+            # Préparer les données à envoyer : meal_plan et inventory (si présent)
+            payload = {
+                'meal_plan': data['meal_plan'],
+                'inventory': data.get('inventory', {})
+            }
+            
+            # Envoyer les données à l'endpoint shopping_list
+            response = requests.post(f'{API_BASE_URL}/shopping_list', json=payload)
             response.raise_for_status()
             return response.json()
         except requests.RequestException as e:
             return {'error': f'Erreur lors de l\'appel à l\'API: {str(e)}'}, 500
         except ValueError as e:
             return {'error': f'JSON invalide: {str(e)}'}, 400
-        
+                
 @api.route('/custom_meal_plan')
 class MealPlanPref(Resource):
     @api.doc('get_furniture')
@@ -86,7 +92,7 @@ class MealPlanStock(Resource):
         except ValueError as e:
             return {'error': f'JSON invalide: {str(e)}'}, 400
         
-@api.route('/stock_meal_plan')
+@api.route('/stock_preference_meal_plan')
 class OptimizedMealPlan(Resource):
     @api.doc('get_optimized_meal_plan')
     def post(self):
