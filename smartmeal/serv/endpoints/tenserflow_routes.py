@@ -65,229 +65,67 @@ class MealPlanPref(Resource):
         except ValueError as e:
             return {'error': f'JSON invalide: {str(e)}'}, 400
 
-@api.route('/fake_meal_plan')
-class FakeWeeklyMealPlan(Resource):
-    @api.doc('fake_meal_plan')
-    def get(self):
-        """Obtenir un plan de repas hebdomadaire depuis l'API"""
+@api.route('/stock_meal_plan')
+class MealPlanStock(Resource):
+    @api.doc('get_stock_meal_plan')
+    def post(self):
         try:
-            #response = requests.get(f'{API_BASE_URL}/meal_plan')
-            #response.raise_for_status()  # Vérifie les erreurs HTTP
-            response = {
-    "Friday": [
-        {
-            "calories": 576,
-            "ingredients": [
-                "226 g de gros haricots blancs séchés, comme les haricots corona",
-                "3 feuilles de laurier",
-                "3 gousses d'ail",
-                "farine tout usage",
-                "sel casher et poivre noir fraîchement moulu",
-                "60 ml d'huile d'olive extra vierge",
-                "113 g de pancetta en tranches fines",
-                "6 feuilles de sauge fraîches"
-            ],
-            "items": [
-                "Haricots blancs avec pancetta"
-            ],
-            "servings": 1,
-            "time": 29
-        }
-    ],
-    "Monday": [
-        {
-            "calories": 737,
-            "ingredients": [
-                "huile de tournesol",
-                "567 g de crevettes grandes ou jumbo, pelées et déveinées",
-                "sel et poivre noir fraîchement moulu",
-                "10 ml de cumin moulu",
-                "4 rondelles d'ananas, environ 2,54 cm d'épaisseur",
-                "8 tortillas de farine",
-                "120 ml de fromage râpé",
-                "80 ml de poivrons rouges rôtis, hachés",
-                "60 ml d'oignons verts, hachés",
-                "120 ml de crème sure légère",
-                "10 ml de zeste de citron vert finement râpé",
-                "10 ml de poudre d'ail",
-                "1 mangue, pelée et coupée",
-                "15 ml de jus de citron vert frais",
-                "15 ml de coriandre fraîche, hachée"
-            ],
-            "items": [
-                "Quesadillas"
-            ],
-            "servings": 4,
-            "time": 38
-        }
-    ],
-    "Saturday": [
-        {
-            "calories": 677,
-            "ingredients": [
-                "2 aubergines",
-                "sel",
-                "huile d'olive extra vierge, pour badigeonner",
-                "5 ml de feuilles de thym frais, finement hachées",
-                "poivre noir fraîchement moulu",
-                "454 g de pâte à pizza préparée",
-                "180 ml de sauce tomate",
-                "1 petit tas de feuilles d'origan frais",
-                "227 g de mozzarella, tranchée",
-                "45 ml de parmesan fraîchement râpé",
-                "marjolaine, pour saupoudrer"
-            ],
-            "items": [
-                "Focaccia farcie avec aubergine rôtie et origan"
-            ],
-            "servings": 1,
-            "time": 28
-        }
-    ],
-    "Thursday": [
-        {
-            "calories": 264,
-            "ingredients": [
-                "120 ml de feuilles de basilic frais",
-                "120 ml de feuilles de coriandre fraîche",
-                "180 ml de lait de coco",
-                "30 ml de sauce de poisson",
-                "30 ml de sauce soja",
-                "2,5 ml de coriandre moulue",
-                "2,5 ml de cumin moulu",
-                "2,5 ml de sucre brut",
-                "4 gousses d'ail",
-                "1 piment thaï vert",
-                "un morceau de 2,54 cm de gingembre frais, pelé",
-                "1 tige de citronnelle, couches extérieures dures retirées, tranchée",
-                "1 échalote, coupée en deux",
-                "poivre noir fraîchement concassé",
-                "30 ml d'huile de canola",
-                "960 ml de bouillon de poulet biologique ou de légumes",
-                "1 poivron jaune, épépiné et coupé en dés",
-                "1 aubergine chinoise, en dés",
-                "454 g de nouilles udon de sarrasin",
-                "sel"
-            ],
-            "items": [
-                "Nouilles udon dodues dans le curry vert thaïlandais avec aubergine"
-            ],
-            "servings": 4,
-            "time": 16
-        }
-    ],
-    "Tuesday": [
-        {
-            "calories": 339,
-            "ingredients": [
-                "1 épaule de porc (2722 à 3629 g)",
-                "sel",
-                "360 ml de vinaigre de cidre",
-                "150 ml de ketchup",
-                "2,5 ml de poivre de Cayenne",
-                "5 ml de poivre noir",
-                "15 ml de sucre",
-                "120 ml d'eau"
-            ],
-            "items": [
-                "Épaule de porc effilochée"
-            ],
-            "servings": 3,
-            "time": 55
-        }
-    ],
-    "Wednesday": [
-        {
-            "calories": 709,
-            "ingredients": [
-                "170 g de saumon en conserve, égoutté et arêtes enlevées",
-                "120 ml de poivron rouge en dés",
-                "80 ml de céleri en dés",
-                "45 ml d'oignon vert tranché à 0,32 cm",
-                "45 ml de yaourt grec",
-                "30 ml de jus de citron",
-                "1,25 ml de sel",
-                "454 g de concombres persans"
-            ],
-            "items": [
-                "Salade de saumon de concombre"
-            ],
-            "servings": 2,
-            "time": 24
-        }
-    ]
-} 
-            return jsonify(response)
+            if not request.is_json:
+                return {'error': 'Le corps de la requête doit être au format JSON'}, 400
+            
+            meal_plan = request.get_json()
+            if not meal_plan:
+                return {'error': 'Aucun plan de repas fourni'}, 400
+            
+            # Envoyer le plan de repas fourni à l'endpoint shopping_list
+            response = requests.post(f'{API_BASE_URL}/optimized_meal_plan', json=meal_plan)
+            response.raise_for_status()
+            return response.json()
         except requests.RequestException as e:
             return {'error': f'Erreur lors de l\'appel à l\'API: {str(e)}'}, 500
+        except ValueError as e:
+            return {'error': f'JSON invalide: {str(e)}'}, 400
         
-
-
-@api.route('/fake_furniture_list')
-class FakeFurniture(Resource):
-    @api.doc('fake_furniture_list')
-    def get(self):
-        """Obtenir un plan de repas hebdomadaire depuis l'API"""
+@api.route('/stock_meal_plan')
+class OptimizedMealPlan(Resource):
+    @api.doc('get_optimized_meal_plan')
+    def post(self):
+        """Obtenir un plan de repas optimisé basé sur l'inventaire fourni dans le corps de la requête"""
         try:
-            #response = requests.get(f'{API_BASE_URL}/meal_plan')
-            #response.raise_for_status()  # Vérifie les erreurs HTTP
-            response = {
-    "ananas": "4 rondelles",
-    "aubergine": "2 unités",
-    "aubergine chinoise": "1 unité",
-    "feuilles de basilic frais": "120ml",
-    "bouillon de poulet ou de légumes": "960ml",
-    "céleri": "80ml",
-    "jus de citron": "30ml",
-    "jus de citron vert": "15ml",
-    "citronnelle": "1 tige",
-    "concombres persans": "454g",
-    "feuilles de coriandre fraîche": "135ml",
-    "coriandre moulue": "2.5ml",
-    "crème sure légère": "120ml",
-    "crevettes grandes ou jumbo": "567g",
-    "cumin moulu": "12.5ml",
-    "eau": "120ml",
-    "échalote": "1 unité",
-    "épaule de porc": "2722-3629g",
-    "farine tout usage": "",
-    "fromage râpé": "120ml",
-    "gingembre frais": "1 morceau de 2.54cm",
-    "gousses d'ail": "7 unités",
-    "haricots blancs séchés": "226g",
-    "huile d'olive": "90ml",
-    "huile de canola": "30ml",
-    "huile de tournesol": "",
-    "ketchup": "150ml",
-    "lait de coco": "180ml",
-    "mangue": "1 unité",
-    "mozzarella": "227g",
-    "nouilles udon de sarrasin": "454g",
-    "oignons verts": "105ml",
-    "feuilles d'origan frais": "petit tas",
-    "pancetta": "113g",
-    "parmesan râpé": "45ml",
-    "pâte à pizza préparée": "454g",
-    "piment thaï vert": "1 unité",
-    "poivre de Cayenne": "2.5ml",
-    "poivre noir": "7.5ml",
-    "poivron jaune": "1 unité",
-    "poivrons rouges rôtis": "200ml",
-    "poudre d'ail": "10ml",
-    "sauce de poisson": "30ml",
-    "sauce soja": "30ml",
-    "sauce tomate": "180ml",
-    "saumon en conserve": "170g",
-    "feuilles de sauge fraîche": "6 feuilles",
-    "sel": "3.75ml",
-    "sucre": "17.5ml",
-    "feuilles de thym frais": "5ml",
-    "tortillas de farine": "8 unités",
-    "vinaigre de cidre": "360ml",
-    "yaourt grec": "45ml",
-    "zeste de citron vert": "10ml"
-}
-            return jsonify(response)
+            if not request.is_json:
+                return {'error': 'Le corps de la requête doit être au format JSON'}, 400
+            
+            inventory_data = request.get_json()
+            if not inventory_data:
+                return {'error': 'Aucun inventaire fourni'}, 400
+            
+            # Envoyer les données d'inventaire à l'endpoint optimized_meal_plan
+            response = requests.post(f'{API_BASE_URL}/optimized_meal_plan', json=inventory_data)
+            response.raise_for_status()
+            return response.json()
         except requests.RequestException as e:
             return {'error': f'Erreur lors de l\'appel à l\'API: {str(e)}'}, 500
-        
+        except ValueError as e:
+            return {'error': f'JSON invalide: {str(e)}'}, 400
+
+@api.route('/stock_preferences_meal_plan')
+class OptimizedPreferencesMealPlan(Resource):
+    @api.doc('get_optimized_preferences_meal_plan')
+    def post(self):
+        """Obtenir un plan de repas optimisé basé sur l'inventaire et les préférences utilisateur fournies dans le corps de la requête"""
+        try:
+            if not request.is_json:
+                return {'error': 'Le corps de la requête doit être au format JSON'}, 400
+            
+            inventory_data = request.get_json()
+            if not inventory_data:
+                return {'error': 'Aucun inventaire fourni'}, 400
+            
+            # Envoyer les données d'inventaire à l'endpoint optimized_preferences_meal_plan
+            response = requests.post(f'{API_BASE_URL}/optimized_preferences_meal_plan', json=inventory_data)
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            return {'error': f'Erreur lors de l\'appel à l\'API: {str(e)}'}, 500
+        except ValueError as e:
+            return {'error': f'JSON invalide: {str(e)}'}, 400
