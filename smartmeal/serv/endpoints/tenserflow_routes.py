@@ -11,6 +11,64 @@ api = Namespace('tenserflow', description='Test TenserFlow')
 
 API_BASE_URL = 'http://a1f5-2a01-e0a-ee7-db30-64cf-2054-8bd5-4e08.ngrok-free.app'
 
+ingredient_model = api.model('Ingredient', {
+    'name': fields.String(required=True, description='Nom de l\'ingrédient'),
+    'quantity': fields.String(required=True, description='Quantité'),
+    'type_quantity': fields.String(required=False, description='Type de quantité (g, L, etc.)'),
+})
+
+inventory_model = api.model('Inventory', {
+    'inventory_id': fields.Integer(required=True, description='Identifiant de l\'inventaire'),
+    'user_id': fields.Integer(required=True, description='Identifiant utilisateur'),
+    'ustensils': fields.List(fields.Nested(ingredient_model), required=False),
+    'grocery': fields.List(fields.Nested(ingredient_model), required=False),
+    'fresh_produce': fields.List(fields.Nested(ingredient_model), required=False),
+})
+
+meal_model = api.model('Meal', {
+    'NER': fields.List(fields.String, required=True),
+    'calories': fields.Integer(required=True),
+    'ingredients': fields.List(fields.String, required=True),
+    'items': fields.List(fields.String, required=True),
+    'servings': fields.Integer(required=True),
+    'time': fields.Integer(required=True),
+})
+
+shopping_list_input = api.model('ShoppingListInput', {
+    'meal_plan': fields.Raw(required=True, description='Plan de repas, mappé par jour (lundi, mardi, etc.)'),
+    'inventory': fields.Nested(inventory_model, required=False),
+})
+
+allergy_model = api.model('Allergy', {
+    k: fields.Boolean(required=True) for k in [
+        "ail", "ogm", "riz", "sel", "blé", "kiwi", "lait", "miel", "porc", "soja", "thé", "bœuf", "cacao", "café",
+        "lupin", "maïs", "pomme", "œufs", "alcool", "avocat", "banane", "fraise", "gluten", "oignon", "pêche",
+        "tomate", "carotte", "céleri", "lactose", "poisson", "sésame", "fructose", "moutarde", "sulfites", "gélatine",
+        "histamine", "crustacés", "mollusques", "cacahuètes", "champignons", "charcuterie", "viande rouge",
+        "fruits de mer", "sucre ajouté", "aliments frits", "viande blanche", "aliments acides", "fruits à coque",
+        "produits laitiers", "graisses saturées", "huiles végétales", "produits fermentés",
+        "aliments transformés", "aliments riches en fodmap", "aliments riches en purines",
+        "aliments ultra-transformés"
+    ]
+})
+
+preferences_model = api.model('Preferences', {
+    'preference_id': fields.Integer(required=True),
+    'user_id': fields.Integer(required=True),
+    'allergy': fields.Nested(allergy_model, required=True),
+    'diet': fields.String(required=True),
+    'goal': fields.String(required=True),
+    'new': fields.Integer(required=True),
+    'number_of_meals': fields.Integer(required=True),
+    'grocery_day': fields.String(required=True),
+    'language': fields.String(required=True),
+})
+
+user_data_model = api.model('UserData', {
+    'inventory': fields.Nested(inventory_model, required=True),
+    'preferences': fields.Nested(preferences_model, required=True),
+})
+
 @api.route('/meal_plan')
 class WeeklyMealPlan(Resource):
     @api.doc('get_weekly_meal_plan')
@@ -22,8 +80,10 @@ class WeeklyMealPlan(Resource):
             return response.json()
         except requests.RequestException as e:
             return {'error': f'Erreur lors de l\'appel à l\'API: {str(e)}'}, 500
+        
 @api.route('/furniture')
 class ShoppingList(Resource):
+    @api.expect(shopping_list_input, validate=True)
     @api.doc('get_shopping_list')
     def post(self):
         """Obtenir une liste de courses basée sur le plan de repas et l'inventaire fournis dans le corps de la requête"""
@@ -96,6 +156,7 @@ class OptimizedMealPlan(Resource):
 
 @api.route('/stock_preferences_meal_plan')
 class OptimizedPreferencesMealPlan(Resource):
+    @api.expect(user_data_model)
     @api.doc('get_optimized_preferences_meal_plan')
     def post(self):
         """Obtenir un plan de repas optimisé basé sur l'inventaire et les préférences utilisateur fournies dans le corps de la requête"""
