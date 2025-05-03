@@ -71,28 +71,8 @@ class MealPlanPref(Resource):
         except ValueError as e:
             return {'error': f'JSON invalide: {str(e)}'}, 400
 
-@api.route('/stock_meal_plan')
-class MealPlanStock(Resource):
-    @api.doc('get_stock_meal_plan')
-    def post(self):
-        try:
-            if not request.is_json:
-                return {'error': 'Le corps de la requête doit être au format JSON'}, 400
-            
-            meal_plan = request.get_json()
-            if not meal_plan:
-                return {'error': 'Aucun plan de repas fourni'}, 400
-            
-            # Envoyer le plan de repas fourni à l'endpoint shopping_list
-            response = requests.post(f'{API_BASE_URL}/optimized_meal_plan', json=meal_plan)
-            response.raise_for_status()
-            return response.json()
-        except requests.RequestException as e:
-            return {'error': f'Erreur lors de l\'appel à l\'API: {str(e)}'}, 500
-        except ValueError as e:
-            return {'error': f'JSON invalide: {str(e)}'}, 400
         
-@api.route('/stock_preference_meal_plan')
+@api.route('/stock_meal_plan')
 class OptimizedMealPlan(Resource):
     @api.doc('get_optimized_meal_plan')
     def post(self):
