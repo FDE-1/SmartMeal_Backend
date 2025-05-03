@@ -111,6 +111,10 @@ class OptimizedPreferencesMealPlan(Resource):
             response = requests.post(f'{API_BASE_URL}/optimized_preferences_meal_plan', json=inventory_data)
             response.raise_for_status()
             return response.json()
+        except requests.HTTPError as e:
+            print("❌ HTTPError status:", e.response.status_code)
+            print("❌ HTTPError body:", e.response.text)
+            return {'error': f'Erreur HTTP de l\'API: {e.response.text}'}, e.response.status_code
         except requests.RequestException as e:
             return {'error': f'Erreur lors de l\'appel à l\'API: {str(e)}'}, 500
         except ValueError as e:
