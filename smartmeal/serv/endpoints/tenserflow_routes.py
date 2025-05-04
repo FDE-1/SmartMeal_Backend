@@ -237,9 +237,9 @@ shopping_list_input = api.model('ShoppingListInput', {
 })
 
 @api.route('/shopping')
-class ShoppingList(Resource):
+class ShoppingListUserId(Resource):
     @api.expect(shopping_list_input, validate=True)
-    @api.doc('get_shopping_list')
+    @api.doc('shopping_list_user_id')
     def post(self):
         """Obtenir une liste de courses basée sur le plan de repas et l'inventaire utilisateur"""
         try:
