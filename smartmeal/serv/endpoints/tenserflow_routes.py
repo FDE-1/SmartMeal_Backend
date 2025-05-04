@@ -230,3 +230,48 @@ class OptimizedPreferencesMealPlan(Resource):
             return {'error': f'Erreur lors de l\'appel à l\'API: {str(e)}'}, 500
         except Exception as e:
             return {'error': f'Erreur interne: {str(e)}'}, 500
+        
+shopping_list_input = api.model('ShoppingListInput', {
+    'user_id': fields.Integer(required=True, description='ID de l’utilisateur'),
+    'meal_plan': fields.Raw(required=True, description='Plan de repas généré')
+})
+
+@api.route('/shopping')
+class ShoppingList(Resource):
+    @api.expect(shopping_list_input, validate=True)
+    @api.doc('get_shopping_list')
+    def post(self):
+        """Obtenir une liste de courses basée sur le plan de repas et l'inventaire utilisateur"""
+        try:
+            if not request.is_json:
+                return {'error': 'Le corps de la requête doit être au format JSON'}, 400
+
+            data = request.get_json()
+            user_id = data.get('user_id')
+            meal_plan = data.get('meal_plan')
+
+            if not meal_plan or not user_id:
+                return {'error': 'Champ manquant: meal_plan et user_id sont requis'}, 400
+
+            inventory = Inventory.query.filter_by(user_id=user_id).first()
+            if not inventory:
+                return {'error': 'Aucun inventaire trouvé pour cet utilisateur'}, 404
+
+            inventory_dict = inventory.to_dict() if hasattr(inventory, 'to_dict') else inventory.__dict__
+            inventory_dict.pop('_sa_instance_state', None)
+
+            payload = {
+                'meal_plan': meal_plan,
+                'inventory': inventory_dict
+            }
+
+            response = requests.post(f'{API_BASE_URL}/shopping_list', json=payload)
+            response.raise_for_status()
+            return response.json()
+
+        except requests.RequestException as e:
+            return {'error': f'Erreur lors de l\'appel à l\'API: {str(e)}'}, 500
+        except ValueError as e:
+            return {'error': f'JSON invalide: {str(e)}'}, 400
+        except Exception as e:
+            return {'error': f'Erreur interne: {str(e)}'}, 500
