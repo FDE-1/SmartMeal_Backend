@@ -2,6 +2,8 @@ from flask import jsonify, request
 from flask_restx import Namespace, Resource, fields
 from ..connection.loader import db
 from ..models.recipe import Recipe
+from ..models.preferences import Preferences
+from ..models.inventory import Inventory
 import requests
 import json
 import re
@@ -180,3 +182,51 @@ class OptimizedPreferencesMealPlan(Resource):
             return {'error': f'Erreur lors de l\'appel à l\'API: {str(e)}'}, 500
         except ValueError as e:
             return {'error': f'JSON invalide: {str(e)}'}, 400
+
+
+user_id_model = api.model('UserIdModel', {
+    'user_id': fields.Integer(required=True, description='ID de l’utilisateur')
+})        
+@api.route('/meal_plan_user_id')
+class OptimizedPreferencesMealPlan(Resource):
+    @api.doc('meal_plan_user_id')
+    @api.expect(user_id_model)
+    def post(self):
+        """Obtenir un plan de repas optimisé basé sur l'id dans la requête"""
+        try:
+            if not request.is_json:
+                return {'error': 'Le corps de la requête doit être au format JSON'}, 400
+
+            data = request.get_json()
+            user_id = data.get('user_id')
+            if not user_id:
+                return {'error': 'user_id manquant dans la requête'}, 400
+
+            preferences = Preferences.query.filter_by(user_id=user_id).first()
+            inventory = Inventory.query.filter_by(user_id=user_id).first()
+
+            if not preferences or not inventory:
+                return {'error': 'Inventaire ou préférences non trouvés pour cet utilisateur'}, 404
+
+            inventory_dict = inventory.to_dict() if hasattr(inventory, 'to_dict') else inventory.__dict__
+            preferences_dict = preferences.to_dict() if hasattr(preferences, 'to_dict') else preferences.__dict__
+
+            inventory_dict.pop('_sa_instance_state', None)
+            preferences_dict.pop('_sa_instance_state', None)
+
+            payload = {
+                "inventory": inventory_dict,
+                "preferences": preferences_dict
+            }
+
+            response = requests.post(f'{API_BASE_URL}/optimized_preferences_meal_plan', json=payload)
+            response.raise_for_status()
+
+            return response.json()
+
+        except requests.HTTPError as e:
+            return {'error': f'Erreur HTTP de l\'API: {e.response.text}'}, e.response.status_code
+        except requests.RequestException as e:
+            return {'error': f'Erreur lors de l\'appel à l\'API: {str(e)}'}, 500
+        except Exception as e:
+            return {'error': f'Erreur interne: {str(e)}'}, 500
