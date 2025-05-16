@@ -85,7 +85,7 @@ def get_meal_plan_from_ollama():
 
 # Nouvelle fonction pour générer la liste de courses à partir du plan de repas
 def get_shopping_list_from_meal_plan(meal_plan):
-    url = "http://6a7d-163-5-3-68.ngrok-free.app/api/generate"
+    url = "http://f564-2a01-e0a-ee7-db30-f1ce-2def-a57b-a05a.ngrok-free.app/api/generate"
     prompt = f"""
     À partir du plan de repas suivant généré pour une semaine (Lundi à Samedi) au format JSON :
     {json.dumps(meal_plan, ensure_ascii=False)},
