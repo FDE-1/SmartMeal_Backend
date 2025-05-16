@@ -47,7 +47,7 @@ def async_llm_call(f):
 
 # Fonction pour appeler Ollama avec le modèle deepseek-r1 pour le plan de repas
 def get_meal_plan_from_ollama():
-    url = "http://5793-163-5-3-68.ngrok-free.app/api/generate"
+    url = "http://f564-2a01-e0a-ee7-db30-f1ce-2def-a57b-a05a.ngrok-free.app/api/generate"
     prompt = """
     Génère un plan de repas pour une semaine (Lundi à Samedi) pour une personne. 
     Pour chaque jour, propose 1 à 2 repas avec une liste d'items (plats ou aliments), 
