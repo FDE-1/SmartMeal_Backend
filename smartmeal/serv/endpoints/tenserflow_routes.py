@@ -4,6 +4,8 @@ from ..connection.loader import db
 from ..models.recipe import Recipe
 from ..models.preferences import Preferences
 from ..models.inventory import Inventory
+from ..models.user_recipe import UserRecipe
+from ..models.recipe import Recipe
 import requests
 import json
 import re
@@ -204,7 +206,37 @@ class OptimizedPreferencesMealPlan(Resource):
 
             preferences = Preferences.query.filter_by(user_id=user_id).first()
             inventory = Inventory.query.filter_by(user_id=user_id).first()
+            user_recipes = UserRecipe.query.filter_by(user_id=user_id).all()
 
+            recette_perso = {
+                    "Monday": [],
+                    "Tuesday": [],
+                    "Wednesday": [],
+                    "Thursday": [],
+                    "Friday": [],
+                    "Saturday": [],
+                    "Sunday": []
+                }
+
+            for recipe in user_recipes:
+                personalisation = recipe.personalisation
+                if personalisation and 'day' in personalisation and personalisation['day']:
+                    for day in personalisation['day']:
+                        # Map French day names to English keys
+                        day_mapping = {
+                            "Lundi": "Monday",
+                            "Mardi": "Tuesday",
+                            "Mercredi": "Wednesday",
+                            "Jeudi": "Thursday",
+                            "Vendredi": "Friday",
+                            "Samedi": "Saturday",
+                            "Dimanche": "Sunday"
+                        }
+                        
+                        english_day = day_mapping.get(day)
+                        recette_trouve = Recipe.query.filter_by(recipe_id=recipe.recipe_id).first()
+                        recette_perso[english_day].append(recette_trouve)
+                        
             if not preferences or not inventory:
                 return {'error': 'Inventaire ou préférences non trouvés pour cet utilisateur'}, 404
 
@@ -216,7 +248,8 @@ class OptimizedPreferencesMealPlan(Resource):
 
             payload = {
                 "inventory": inventory_dict,
-                "preferences": preferences_dict
+                "preferences": preferences_dict,
+                "recette": recette_perso
             }
 
             response = requests.post(f'{API_BASE_URL}/optimized_preferences_meal_plan', json=payload)
