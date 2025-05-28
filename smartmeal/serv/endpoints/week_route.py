@@ -166,6 +166,27 @@ class UserWeeks(Resource):
             'samedi': w.samedi,
             'dimanche': w.dimanche
         } for w in weeks])
+    
+@api.route('/user/<int:user_id>/week/<int:week_id>')
+class UserWeek(Resource):
+    @api.doc('get_user_week')
+    def get(self, user_id, week_id):
+        """Get a specific week for a user"""
+        week = Week.query.filter_by(user_id=user_id, week_id=week_id).first()
+        
+        if not week:
+            return {'message': 'Week not found'}, 404
+            
+        return jsonify({
+            # 'week_id': week.week_id,
+            'lundi': week.lundi,
+            'mardi': week.mardi,
+            'mercredi': week.mercredi,
+            'jeudi': week.jeudi,
+            'vendredi': week.vendredi,
+            'samedi': week.samedi,
+            'dimanche': week.dimanche
+        })
 
 @api.route('/testsuite/weeks')
 class WeekTestSuite(Resource):
