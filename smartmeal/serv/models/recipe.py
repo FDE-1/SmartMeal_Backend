@@ -1,12 +1,18 @@
 from ..connection.loader import db
+from sqlalchemy.dialects.postgresql import JSONB
 
 class Recipe(db.Model):
     __tablename__ = 'recipes'
     recipe_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    recipe_name = db.Column(db.String, nullable=False)
-    recipe_ingredients = db.Column(db.JSON)
-    recipe_instructions = db.Column(db.JSON)
-    recipe_preparation_time = db.Column(db.Integer)
-    recipe_ustensils_required = db.Column(db.JSON)
-    recipe_nutritional_value = db.Column(db.JSON)
-    rating = db.Column(db.Numeric(2,1))
+    title = db.Column(db.String(255), nullable=False)  # Changed from recipe_name
+    ingredients = db.Column(JSONB)  # Changed from recipe_ingredients
+    instructions = db.Column(JSONB)  # Changed from recipe_instructions
+    ner = db.Column(JSONB)
+    type = db.Column(db.String(50))
+    nutriments = db.Column(JSONB)  # Replaces recipe_nutritional_value
+    day = db.Column(db.String(10), 
+                  db.CheckConstraint("day IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')"))
+    link = db.Column(db.Text)
+    source = db.Column(db.String(50))
+    calories = db.Column(db.Integer)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)

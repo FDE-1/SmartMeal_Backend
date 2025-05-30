@@ -1,18 +1,29 @@
 from flask import jsonify, request, current_app
 from ..connection.loader import db
 from ..models.recipe import Recipe
+from ..models.user import User
 from flask_restx import Namespace, Resource, fields
 
 api = Namespace('recipes', description='Recipe operations')
 
 recipe_model = api.model('Recipe', {
-    'recipe_name': fields.String(required=True),
-    'recipe_ingredients': fields.Raw(required=True),
-    'recipe_instructions': fields.Raw(required=True),
-    'recipe_preparation_time': fields.Integer(required=True),
-    'recipe_ustensils_required': fields.Raw(required=True),
-    'recipe_nutritional_value': fields.Raw(required=True),
-    'rating': fields.Float(description='Rating from 0 to 5 in 0.5 increments')
+    'title': fields.String(required=True, description='Titre de la recette'),
+    'ingredients': fields.List(fields.String,required=True,description='List des ingrédients (e.g., "100g Farine")'),
+    'instructions': fields.List(fields.String,required=True,description='Instructions'),
+    'ner': fields.List(fields.String,required=True,description='Ingredients'),
+    'type': fields.String(required=False,description='Catégories["Entree","Plat","Dessert"]'),
+    'calories': fields.Integer(required=False, description="Nombre de calories"),
+    'nutriments': fields.Nested(api.model('Nutriments', {
+        'lipide': fields.Float(description='g lipide'),
+        'glucide': fields.Float(description='g glucide'),
+        'proteine': fields.Float(description='g proteine'),
+        'fibre': fields.Float(description='g fibre')
+    }), description='Info Nutritionel'),
+    'day': fields.String(required=False,description="Jour ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']",enum=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']),
+    'link': fields.String(required=False,description='Origine default = null'),
+    'source': fields.String(required=False,description='Source default = null'),
+    'recipe_id': fields.Integer(required=False,description='recipe ID'),
+    'user_id': fields.Integer(required=True,description='User ID')
 })
 
 @api.route('/')
@@ -21,7 +32,9 @@ class RecipeList(Resource):
     def get(self):
         """List all recipes"""
         recipes = Recipe.query.all()
-        return jsonify([{'recipe_id': r.recipe_id, 'name': r.recipe_name, 'rating': r.rating} for r in recipes])
+        return jsonify([{'recipe_id': r.recipe_id, 'title': r.title, 'ingredients': r.ingredients, 'instructions': r.instructions,
+                         'ner': r.ner, "type": r.type, 'calories': r.calories, "nutriments": r.nutriments, "day": r.day,
+                         "link": r.link, "source": r.source, "user_id": r.user_id} for r in recipes])
 
     @api.doc('create_recipe')
     @api.expect(recipe_model)
@@ -33,35 +46,35 @@ class RecipeList(Resource):
                 return {'message': 'No input data provided'}, 400
 
             # Validate required fields
-            required_fields = [
-                'recipe_name',
-                'recipe_ingredients',
-                'recipe_instructions',
-                'recipe_preparation_time',
-            ]
-            
+            required_fields = ['title', 'ingredients', 'instructions', "ner", "user_id"]
             if not all(field in data for field in required_fields):
                 missing = [field for field in required_fields if field not in data]
                 return {
                     'message': 'Missing required fields',
                     'missing_fields': missing
                 }, 400
-            
-            if 'rating' in data:
-                rating = data['rating']
-                if not (0 <= rating <= 5) or (rating * 2) % 1 != 0:
-                    return {
-                        'message': 'Rating must be between 0 and 5 in 0.5 increments'
-                    }, 400
+
+            # Validate day if provided
+            if 'day' in data and data['day'] not in [
+                'Monday', 'Tuesday', 'Wednesday', 
+                'Thursday', 'Friday', 'Saturday', 'Sunday'
+            ]:
+                return {
+                    'message': 'Invalid day value'
+                }, 400
 
             new_recipe = Recipe(
-                recipe_name=data['recipe_name'],
-                recipe_ingredients=data['recipe_ingredients'],
-                recipe_instructions=data['recipe_instructions'],
-                recipe_preparation_time=data['recipe_preparation_time'],
-                recipe_ustensils_required=data.get('recipe_ustensils_required', []),
-                recipe_nutritional_value=data.get('recipe_nutritional_value', {}),
-                rating=data.get('rating', None)
+                title=data['title'],
+                ingredients=data['ingredients'],
+                instructions=data['instructions'],
+                ner=data.get('ner', []),
+                type=data.get('type', ''),  
+                calories=data.get('calories', 0),
+                nutriments=data.get('nutriments', {}),
+                day=data.get('day', ''),
+                link=data.get('link', ''),
+                source=data.get('source', ''),
+                user_id = data['user_id']
             )
 
             db.session.add(new_recipe)
@@ -69,7 +82,8 @@ class RecipeList(Resource):
             
             return {
                 'message': 'Recipe created successfully',
-                'recipe_id': new_recipe.recipe_id
+                'recipe_id': new_recipe.recipe_id,
+                'title': new_recipe.title
             }, 201
 
         except Exception as e:
@@ -87,15 +101,20 @@ class RecipeResource(Resource):
     def get(self, recipe_id):
         """Get a specific recipe by ID"""
         recipe = Recipe.query.get_or_404(recipe_id)
+        
         return {
             'recipe_id': recipe.recipe_id,
-            'recipe_name': recipe.recipe_name,
-            'recipe_ingredients': recipe.recipe_ingredients,
-            'recipe_instructions': recipe.recipe_instructions,
-            'recipe_preparation_time': recipe.recipe_preparation_time,
-            'recipe_ustensils_required': recipe.recipe_ustensils_required,
-            'recipe_nutritional_value': recipe.recipe_nutritional_value,
-            'rating': float(recipe.rating) if recipe.rating is not None else None
+            'title': recipe.title,
+            'ingredients': recipe.ingredients,
+            'instructions': recipe.instructions,
+            'ner': recipe.ner,
+            'type': recipe.type,
+            'calories': recipe.calories,
+            'nutriments': recipe.nutriments or {},
+            'day': recipe.day,
+            'link': recipe.link,
+            'source': recipe.source,
+            'user_id': recipe.user_id
         }
 
     @api.doc('update_recipe')
@@ -107,16 +126,34 @@ class RecipeResource(Resource):
             recipe = Recipe.query.get_or_404(recipe_id)
             data = api.payload
             
-            recipe.recipe_name = data.get('recipe_name', recipe.recipe_name)
-            recipe.recipe_ingredients = data.get('recipe_ingredients', recipe.recipe_ingredients)
-            recipe.recipe_instructions = data.get('recipe_instructions', recipe.recipe_instructions)
-            recipe.recipe_preparation_time = data.get('recipe_preparation_time', recipe.recipe_preparation_time)
-            recipe.recipe_ustensils_required = data.get('recipe_ustensils_required', recipe.recipe_ustensils_required)
-            recipe.recipe_nutritional_value = data.get('recipe_nutritional_value', recipe.recipe_nutritional_value)
-            if 'rating' in data:
-                recipe.rating = data['rating']
+            # Update required fields if provided
+            if 'title' in data:
+                recipe.title = data['title']
+            if 'ingredients' in data:
+                recipe.ingredients = data['ingredients']
+            if 'instructions' in data:
+                recipe.instructions = data['instructions']
+            
+            # Update optional fields
+            recipe.ner = data.get('ner', recipe.ner)
+            recipe.type = data.get('type', recipe.type)
+            recipe.calories = data.get('calories', recipe.calories)
+            recipe.nutriments = data.get('nutriments', recipe.nutriments)
+            recipe.day = data.get('day', recipe.day)
+            recipe.link = data.get('link', recipe.link)
+            recipe.source = data.get('source', recipe.source)
+            
+            # Validate day if provided
+            if 'day' in data and data['day'] not in [None, '']:
+                if data['day'] not in ['Monday', 'Tuesday', 'Wednesday', 
+                                    'Thursday', 'Friday', 'Saturday', 'Sunday']:
+                    return {'message': 'Invalid day value'}, 400
+            
             db.session.commit()
-            return {'message': 'Recipe updated successfully'}
+            return {
+                'message': 'Recipe updated successfully',
+                'recipe_id': recipe.recipe_id
+            }
         
         except Exception as e:
             db.session.rollback()
@@ -140,6 +177,33 @@ class RecipeResource(Resource):
                 'message': 'Failed to delete recipe',
                 'error': str(e)
             }, 500
+        
+@api.route('/user/<int:user_id>')
+class UserRecipesResource(Resource):
+    @api.doc('get_user_recipes')
+    @api.response(404, 'User not found')
+    def get(self, user_id):
+        """Get all recipes for a specific user"""
+        # Verify user exists
+        user = User.query.get_or_404(user_id)
+        
+        recipes = Recipe.query.filter_by(user_id=user_id).all()
+        
+        return [{
+            'recipe_id': recipe.recipe_id,
+            'title': recipe.title,
+            'ingredients': recipe.ingredients,
+            'instructions': recipe.instructions,
+            'ner': recipe.ner,
+            'type': recipe.type,
+            'calories': recipe.calories,
+            'nutriments': recipe.nutriments or {},
+            'day': recipe.day,
+            'link': recipe.link,
+            'source': recipe.source,
+            'user_id': recipe.user_id,
+            'created_at': recipe.created_at.isoformat() if recipe.created_at else None
+        } for recipe in recipes]
       
 @api.route('/testsuite/recipes')
 class RecipeTestSuite(Resource):
@@ -158,67 +222,66 @@ class RecipeTestSuite(Resource):
             return resp, 200
 
         try:
-            # === Test 1: Create recipe without rating ===
+            # === Test 1: Create basic recipe ===
             create_payload = {
-                "recipe_name": "Pasta Test",
-                "recipe_ingredients": {
-                    "pasta": "300g",
-                    "tomatoes": "2",
-                    "garlic": "1 clove"
-                },
-                "recipe_instructions": [
+                "title": "Pasta Test",
+                "ingredients": ["300g pasta", "2 tomatoes", "1 clove garlic"],
+                "instructions": [
                     "Boil water",
                     "Cook pasta",
                     "Prepare sauce"
                 ],
-                "recipe_preparation_time": 20,
-                "recipe_ustensils_required": ["pot", "spatula"],
-                "recipe_nutritional_value": {
-                    "calories": 500,
-                    "protein": "15g"
-                }
+                "type": "Main Course",
+                "calories": 500,
+                "nutriments": {
+                    "lipide": 10,
+                    "glucide": 80,
+                    "proteine": 15,
+                    "fibre": 5
+                },
+                "day": "Monday",
+                "ner": ["pasta", "tomatoes", "garlic"],
+                "user_id": 1
             }
 
             with current_app.test_request_context(json=create_payload):
                 response = RecipeList().post()
                 recipe_obj, status_code = unpack_response(response)
+                print(recipe_obj)
                 recipe_id = recipe_obj['recipe_id']
-                results.append(f"✅ Recipe created with ID: {recipe_id} (no rating)")
+                results.append(f"✅ Recipe created with ID: {recipe_id}")
 
-            # === Test 2: Get recipe and verify default fields ===
+            # === Test 2: Get recipe and verify fields ===
             with current_app.test_request_context():
                 response = RecipeResource().get(recipe_id)
                 data, status_code = unpack_response(response)
                 if status_code != 200:
                     raise Exception("Failed to fetch by recipe_id")
-                if data['recipe_name'] != "Pasta Test":
+                if data['title'] != "Pasta Test":
                     raise Exception("Incorrect data retrieved")
-                print(data['rating'])
-                if data['rating'] is not None:
-                    raise Exception("Rating should be null for new recipe")
-                results.append(f"✅ Recipe retrieved: {data['recipe_name']}")
+                if data['type'] != "Main Course":
+                    raise Exception("Type not saved correctly")
+                results.append(f"✅ Recipe retrieved: {data['title']}")
 
-            # === Test 3: Update with rating ===
+            # === Test 3: Update recipe ===
             update_payload = {
-                "recipe_name": "Updated Pasta",
-                "recipe_ingredients": {
-                    "pasta": "400g",
-                    "tomatoes": "3",
-                    "garlic": "2 cloves",
-                    "basil": "some leaves"
-                },
-                "recipe_instructions": [
+                "title": "Updated Pasta",
+                "ingredients": ["400g pasta", "3 tomatoes", "2 cloves garlic", "some basil"],
+                "instructions": [
                     "Boil salted water",
                     "Cook pasta al dente",
                     "Prepare tomato sauce"
                 ],
-                "recipe_preparation_time": 25,
-                "recipe_ustensils_required": ["pot", "spatula", "blender"],
-                "recipe_nutritional_value": {
-                    "calories": 600,
-                    "protein": "18g"
+                "type": "Italian",
+                "calories": 600,
+                "nutriments": {
+                    "lipide": 12,
+                    "glucide": 90,
+                    "proteine": 18,
+                    "fibre": 6
                 },
-                "rating": 4.5
+                "day": "Tuesday",
+                "source": "Family Recipe"
             }
 
             with current_app.test_request_context(json=update_payload):
@@ -226,15 +289,17 @@ class RecipeTestSuite(Resource):
                 _, status_code = unpack_response(response)
                 if status_code != 200:
                     raise Exception("Update failed")
-                results.append("✅ Update with rating completed")
+                results.append("✅ Recipe updated successfully")
 
-            # === Test 4: Verify rating update ===
+            # === Test 4: Verify update ===
             with current_app.test_request_context():
                 response = RecipeResource().get(recipe_id)
                 updated, _ = unpack_response(response)
-                if updated['rating'] != 4.5:
-                    raise Exception("Rating update failed")
-                results.append("✅ Rating update verified")
+                if updated['day'] != "Tuesday":
+                    raise Exception("Day update failed")
+                if updated['source'] != "Family Recipe":
+                    raise Exception("Source update failed")
+                results.append("✅ Update verified")
 
             # === Test 5: Delete ===
             with current_app.test_request_context():
