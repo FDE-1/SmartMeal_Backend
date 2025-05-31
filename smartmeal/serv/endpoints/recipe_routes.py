@@ -201,8 +201,7 @@ class UserRecipesResource(Resource):
             'day': recipe.day,
             'link': recipe.link,
             'source': recipe.source,
-            'user_id': recipe.user_id,
-            'created_at': recipe.created_at.isoformat() if recipe.created_at else None
+            'user_id': recipe.user_id
         } for recipe in recipes]
       
 @api.route('/testsuite/recipes')
