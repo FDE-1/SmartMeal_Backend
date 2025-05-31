@@ -13,7 +13,7 @@ import threading
 from functools import wraps
 api = Namespace('tenserflow', description='Test TenserFlow')
 
-API_BASE_URL = 'http://d471-2a02-842b-483-3101-98b4-3851-dc7c-bfe2.ngrok-free.app'
+API_BASE_URL = 'http://ad00-2a0d-e487-49e-fb3e-480-8347-4904-ab5e.ngrok-free.app'
 
 ingredient_model = api.model('Ingredient', {
     'name': fields.String(required=True, description='Nom de l\'ingrédient'),
@@ -206,7 +206,7 @@ class OptimizedPreferencesMealPlan(Resource):
 
             preferences = Preferences.query.filter_by(user_id=user_id).first()
             inventory = Inventory.query.filter_by(user_id=user_id).first()
-            user_recipes = Recipe.query.filter_by(user_id=user_id).all()
+            user_recipes = UserRecipe.query.filter_by(user_id=user_id).all()
 
             recette_perso = {
                     "Monday": [],
@@ -219,18 +219,23 @@ class OptimizedPreferencesMealPlan(Resource):
                 }
 
             for recipe in user_recipes:
-                if recipe.day and recipe.day in recette_perso:
-                    recette_perso[recipe.day].append({
-                        "title": recipe.title,
-                        "ingredients": recipe.ingredients,
-                        "directions": recipe.instructions,
-                        "link": recipe.link,
-                        "source": recipe.source,
-                        "NER": recipe.ner,
-                        "calories": recipe.calories,
-                        "type": recipe.type,
-                        "nutriments": recipe.nutriments or {}
-                    })
+                personalisation = recipe.personalisation
+                if personalisation and 'day' in personalisation and personalisation['day']:
+                    for day in personalisation['day']:
+                        # Map French day names to English keys
+                        day_mapping = {
+                            "Lundi": "Monday",
+                            "Mardi": "Tuesday",
+                            "Mercredi": "Wednesday",
+                            "Jeudi": "Thursday",
+                            "Vendredi": "Friday",
+                            "Samedi": "Saturday",
+                            "Dimanche": "Sunday"
+                        }
+                        
+                        english_day = day_mapping.get(day)
+                        recette_trouve = Recipe.query.filter_by(recipe_id=recipe.recipe_id).first()
+                        recette_perso[english_day].append(recette_trouve)
                         
             if not preferences or not inventory:
                 return {'error': 'Inventaire ou préférences non trouvés pour cet utilisateur'}, 404
