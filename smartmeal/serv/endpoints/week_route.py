@@ -52,6 +52,7 @@ class WeekList(Resource):
                 return {'message': 'user_id is required'}, 400
 
             new_week = Week(
+                week_id=data['week_id'],
                 user_id=data['user_id'],
                 lundi=data.get('lundi', []),
                 mardi=data.get('mardi', []),
