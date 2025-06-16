@@ -8,3 +8,7 @@ flask_cors
 requests
 pandas
 tensorflow
+Flask-RESTX
+SQLAlchemy
+firebase-admin
+PyJWT
