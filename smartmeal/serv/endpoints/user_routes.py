@@ -4,7 +4,19 @@ from ..models.user import User
 from flask_restx import Namespace, Resource, fields
 from sqlalchemy import text
 import time
+import requests
+import os
+import logging
+from firebase_admin import credentials, auth, initialize_app
+from dotenv import load_dotenv
+
 api = Namespace('users', description='Opérations utilisateur')
+
+load_dotenv()
+FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY", "AIzaSyBAeb4LtWX3lHdiqA6glTHEBxyFRYWU_Zo")
+
+cred = credentials.Certificate("smartmeal-62b08-firebase-adminsdk-fbsvc-1d50e7ef22.json")
+initialize_app(cred)
 
 # Modèles Swagger
 user_model = api.model('User', {
@@ -20,6 +32,25 @@ login_model = api.model('Login', {
     'password': fields.String(required=True, description="Mot de passe")
 })
 
+signup_model = api.model('Signup', {
+    'user_name': fields.String(required=True, description='Prénom'),
+    'user_surname': fields.String(required=True, description='Nom'),
+    'email': fields.String(required=True, description="Email"),
+    'password': fields.String(required=True, description="Mot de passe")
+})
+
+resend_verification_model = api.model('ResendVerification', {
+    'idToken': fields.String(required=True, description="Jeton ID Firebase")
+})
+
+refresh_token_model = api.model('RefreshToken', {
+    'refresh_token': fields.String(required=True, description="Jeton de rafraîchissement")
+})
+
+forgot_password_model = api.model('ForgotPassword', {
+    'email': fields.String(required=True, description="Email")
+})
+
 change_info_model = api.model('ChangeInfo', {
     'new_name': fields.String(description="Nom d'utilisateur"),
     'new_surname': fields.String(description="Nouveau nom"),
@@ -31,6 +62,19 @@ change_info_model = api.model('ChangeInfo', {
 test_suite_model = api.model('TestSuite', {
     'test_name': fields.String(description="Nom du test")
 })
+
+def verify_token(id_token):
+    try:
+        decoded_token = auth.verify_id_token(id_token, check_revoked=True)
+        if not decoded_token.get("email_verified", False):
+            api.abort(403, "Email not verified. Please verify your email.")
+        return {"uid": decoded_token["uid"], "email": decoded_token.get("email")}
+    except auth.InvalidIdTokenError:
+        api.abort(401, "Invalid authentication token")
+    except auth.RevokedIdTokenError:
+        api.abort(401, "Token has been revoked")
+    except Exception as e:
+        api.abort(401, str(e))
 
 @api.route('/')
 class UserResource(Resource):
@@ -55,24 +99,57 @@ class UserResource(Resource):
         if not data:
             api.abort(400, "Aucune donnée reçue")
 
-        required_fields = ['user_name', 'user_surname', 'user_email', 'user_password']
+        required_fields = ['user_name', 'user_surname', 'email', 'password']
         if not all(field in data for field in required_fields):
             api.abort(400, "Champs requis manquants")
 
-        if User.query.filter_by(user_email=data['user_email']).first():
+        # Vérifier si l'email existe déjà dans Firebase
+        try:
+            auth.get_user_by_email(data['email'])
             api.abort(409, "Email déjà utilisé")
+        except auth.UserNotFoundError:
+            pass
 
         try:
+            # Créer l'utilisateur dans Firebase
+            url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={FIREBASE_API_KEY}"
+            payload = {
+                "email": data['email'],
+                "password": data['password'],
+                "returnSecureToken": True
+            }
+            response = requests.post(url, json=payload)
+            response_data = response.json()
+
+            if response.status_code != 200:
+                api.abort(400, response_data["error"]["message"])
+
+            id_token = response_data["idToken"]
+            uid = response_data["localId"]
+
+            # Envoyer un email de vérification
+            verify_url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={FIREBASE_API_KEY}"
+            verify_payload = {
+                "requestType": "VERIFY_EMAIL",
+                "idToken": id_token
+            }
+            verify_response = requests.post(verify_url, json=verify_payload)
+            verify_response_data = verify_response.json()
+
+            if verify_response.status_code != 200:
+                api.abort(400, verify_response_data["error"]["message"])
+
+            # Créer l'utilisateur dans SQLAlchemy
             new_user = User(
                 user_name=data['user_name'],
                 user_surname=data['user_surname'],
-                user_email=data['user_email'],
-                user_password=data['user_password']
+                user_email=data['email'],
+                firebase_uid=uid 
             )
             db.session.add(new_user)
             db.session.commit()
-            return new_user, 201
 
+            return new_user, 201
         except Exception as e:
             db.session.rollback()
             api.abort(500, "Erreur de création (interne)", error=str(e))
@@ -116,20 +193,136 @@ class UserLogin(Resource):
         """Authentification utilisateur"""
         try:
             data = api.payload
-            if not all(key in data for key in ['name', 'password']):
-                api.abort(400, "Nom et mot de passe requis")
-            
-            user = User.query.filter_by(user_name=data['name']).first()
-            if not user:
-                api.abort(404, "Utilisateur non trouvé")
-            
-            if user.user_password!= data['password']:
-                api.abort(401, "Mot de passe incorrect")
-            
-            return {'message': 'Authentification réussie'}, 200
-            
+            if not all(key in data for key in ['email', 'password']):
+                api.abort(400, "Email et mot de passe requis")
+
+            # Authentifier via Firebase
+            url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
+            payload = {
+                "email": data['email'],
+                "password": data['password'],
+                "returnSecureToken": True
+            }
+            response = requests.post(url, json=payload)
+            response_data = response.json()
+
+            if response.status_code != 200:
+                error_message = response_data["error"]["message"]
+                if error_message == "EMAIL_NOT_FOUND":
+                    api.abort(404, "Email non trouvé")
+                elif error_message == "INVALID_PASSWORD":
+                    api.abort(401, "Mot de passe incorrect")
+                api.abort(400, error_message)
+
+            id_token = response_data["idToken"]
+            decoded_token = auth.verify_id_token(id_token, check_revoked=True)
+            if not decoded_token.get("email_verified", False):
+                api.abort(403, "Email non vérifié. Veuillez vérifier votre email.")
+
+            return {
+                'message': 'Authentification réussie',
+                'idToken': id_token,
+                'refreshToken': response_data["refreshToken"]
+            }, 200
         except Exception as e:
             api.abort(500, "Erreur d'authentification", error=str(e))
+
+@api.route('/resend-verification')
+class ResendVerification(Resource):
+    @api.doc('resend_verification')
+    @api.expect(resend_verification_model)
+    def post(self):
+        """Renvoyer l'email de vérification"""
+        try:
+            data = api.payload
+            if 'idToken' not in data:
+                api.abort(400, "Jeton ID requis")
+
+            decoded_token = auth.verify_id_token(data['idToken'])
+            if decoded_token.get("email_verified", False):
+                api.abort(400, "Email déjà vérifié")
+
+            url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={FIREBASE_API_KEY}"
+            payload = {
+                "requestType": "VERIFY_EMAIL",
+                "idToken": data['idToken']
+            }
+            response = requests.post(url, json=payload)
+            response_data = response.json()
+
+            if response.status_code != 200:
+                api.abort(400, response_data["error"]["message"])
+
+            return {"message": f"Email de vérification renvoyé à {decoded_token.get('email')}"}, 200
+        except auth.InvalidIdTokenError:
+            api.abort(401, "Jeton d'authentification invalide")
+        except Exception as e:
+            api.abort(500, "Erreur lors de l'envoi de l'email", error=str(e))
+
+@api.route('/refresh-token')
+class RefreshToken(Resource):
+    @api.doc('refresh_token')
+    @api.expect(refresh_token_model)
+    def post(self):
+        """Rafraîchir le jeton Firebase"""
+        try:
+            data = api.payload
+            if 'refresh_token' not in data:
+                api.abort(400, "Jeton de rafraîchissement requis")
+
+            url = f"https://securetoken.googleapis.com/v1/token?key={FIREBASE_API_KEY}"
+            payload = {
+                "grant_type": "refresh_token",
+                "refresh_token": data['refresh_token']
+            }
+            response = requests.post(url, json=payload)
+            response_data = response.json()
+
+            if response.status_code != 200:
+                api.abort(400, response_data["error"]["message"])
+
+            id_token = response_data["id_token"]
+            decoded_token = auth.verify_id_token(id_token, check_revoked=True)
+            if not decoded_token.get("email_verified", False):
+                api.abort(403, "Email non vérifié. Veuillez vérifier votre email.")
+
+            return {
+                "idToken": id_token,
+                "refreshToken": response_data["refresh_token"]
+            }, 200
+        except auth.RevokedIdTokenError:
+            api.abort(401, "Jeton révoqué")
+        except Exception as e:
+            api.abort(500, "Erreur lors du rafraîchissement du jeton", error=str(e))
+
+@api.route('/forgot-password')
+class ForgotPassword(Resource):
+    @api.doc('forgot_password')
+    @api.expect(forgot_password_model)
+    def post(self):
+        """Envoyer un email de réinitialisation de mot de passe"""
+        try:
+            data = api.payload
+            if 'email' not in data:
+                api.abort(400, "Email requis")
+
+            url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={FIREBASE_API_KEY}"
+            payload = {
+                "requestType": "PASSWORD_RESET",
+                "email": data['email']
+            }
+            response = requests.post(url, json=payload)
+            response_data = response.json()
+
+            if response.status_code != 200:
+                error_message = response_data["error"]["message"]
+                if error_message == "EMAIL_NOT_FOUND":
+                    api.abort(404, "Email non trouvé")
+                api.abort(400, error_message)
+
+            return {"message": f"Email de réinitialisation envoyé à {data['email']}"}, 200
+        except Exception as e:
+            api.abort(500, "Erreur lors de l'envoi de l'email", error=str(e))
 
 @api.route('/change-info/<int:user_id>')
 class UserChangeInfo(Resource):
