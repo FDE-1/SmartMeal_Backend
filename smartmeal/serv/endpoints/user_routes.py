@@ -15,7 +15,7 @@ api = Namespace('users', description='Opérations utilisateur')
 load_dotenv()
 FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY", "AIzaSyBAeb4LtWX3lHdiqA6glTHEBxyFRYWU_Zo")
 
-cred = credentials.Certificate("smartmeal-62b08-firebase-adminsdk-fbsvc-1d50e7ef22.json")
+cred = credentials.Certificate("fire.json")
 initialize_app(cred)
 
 # Modèles Swagger
