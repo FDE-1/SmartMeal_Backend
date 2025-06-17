@@ -15,7 +15,9 @@ api = Namespace('users', description='Opérations utilisateur')
 load_dotenv()
 FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY", "AIzaSyBAeb4LtWX3lHdiqA6glTHEBxyFRYWU_Zo")
 
-cred = credentials.Certificate("fire.json")
+current_dir = os.path.dirname(os.path.abspath(__file__))
+firebase_key_path = os.path.join(current_dir, "fire.json")
+cred = credentials.Certificate(firebase_key_path)
 initialize_app(cred)
 
 # Modèles Swagger
@@ -28,7 +30,7 @@ user_model = api.model('User', {
 })
 
 login_model = api.model('Login', {
-    'name': fields.String(required=True, description="Nom d'utilisateur"),
+    'email': fields.String(required=True, description="email"),
     'password': fields.String(required=True, description="Mot de passe")
 })
 
@@ -99,13 +101,13 @@ class UserResource(Resource):
         if not data:
             api.abort(400, "Aucune donnée reçue")
 
-        required_fields = ['user_name', 'user_surname', 'email', 'password']
+        required_fields = ['user_name', 'user_email', 'user_password']
         if not all(field in data for field in required_fields):
             api.abort(400, "Champs requis manquants")
 
         # Vérifier si l'email existe déjà dans Firebase
         try:
-            auth.get_user_by_email(data['email'])
+            auth.get_user_by_email(data['user_email'])
             api.abort(409, "Email déjà utilisé")
         except auth.UserNotFoundError:
             pass
@@ -114,13 +116,13 @@ class UserResource(Resource):
             # Créer l'utilisateur dans Firebase
             url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={FIREBASE_API_KEY}"
             payload = {
-                "email": data['email'],
-                "password": data['password'],
+                "email": data['user_email'],
+                "password": data['user_password'],
                 "returnSecureToken": True
             }
             response = requests.post(url, json=payload)
             response_data = response.json()
-
+            print(response_data)
             if response.status_code != 200:
                 api.abort(400, response_data["error"]["message"])
 
@@ -142,8 +144,9 @@ class UserResource(Resource):
             # Créer l'utilisateur dans SQLAlchemy
             new_user = User(
                 user_name=data['user_name'],
-                user_surname=data['user_surname'],
-                user_email=data['email'],
+                user_surname=data['user_name'],
+                user_email=data['user_email'],
+                user_password=data['user_password'],
                 firebase_uid=uid 
             )
             db.session.add(new_user)

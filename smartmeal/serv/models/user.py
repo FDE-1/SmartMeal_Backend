@@ -7,6 +7,7 @@ class User(db.Model):
     user_surname = db.Column(db.String, nullable=False)
     user_email = db.Column(db.String, unique=True, nullable=False)
     user_password = db.Column(db.String, nullable=False)
+    firebase_uid = db.Column(db.String, nullable=False)
 
     preferences = db.relationship(
         'Preferences', 
