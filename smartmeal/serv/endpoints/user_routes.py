@@ -22,7 +22,9 @@ with open(firebase_key_path, 'r') as file:
 
 firebase['private_key_id'] = os.getenv('private_key_id')
 firebase['private_key'] = os.getenv('private_key')
-cred = credentials.Certificate(firebase)
+with open(firebase_key_path, 'w') as file:
+    json.dump(firebase,file)
+cred = credentials.Certificate(firebase_key_path)
 initialize_app(cred)
 
 # Modèles Swagger
