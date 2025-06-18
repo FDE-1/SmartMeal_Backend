@@ -9,15 +9,20 @@ import os
 import logging
 from firebase_admin import credentials, auth, initialize_app
 from dotenv import load_dotenv
-
+import json
 api = Namespace('users', description='Opérations utilisateur')
 
 load_dotenv()
 FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY", "AIzaSyBAeb4LtWX3lHdiqA6glTHEBxyFRYWU_Zo")
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-firebase_key_path = os.path.join(current_dir, "fire.json")
-cred = credentials.Certificate(firebase_key_path)
+firebase_key_path = os.path.join(current_dir, "smartmeal-62b08-firebase-adminsdk-fbsvc-1e493fd71f.json")
+with open(firebase_key_path, 'r') as file:
+    firebase = json.load(file)
+
+firebase['private_key_id'] = os.getenv('private_key_id')
+firebase['private_key'] = os.getenv('private_key')
+cred = credentials.Certificate(firebase)
 initialize_app(cred)
 
 # Modèles Swagger
