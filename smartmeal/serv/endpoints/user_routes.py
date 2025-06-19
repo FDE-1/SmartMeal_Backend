@@ -11,7 +11,7 @@ from firebase_admin import credentials, auth, initialize_app
 from dotenv import load_dotenv
 import json
 api = Namespace('users', description='Opérations utilisateur')
-
+#print(os.getenv("private_key"))
 load_dotenv()
 FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY", "AIzaSyBAeb4LtWX3lHdiqA6glTHEBxyFRYWU_Zo")
 
@@ -21,10 +21,16 @@ with open(firebase_key_path, 'r') as file:
     firebase = json.load(file)
 
 firebase['private_key_id'] = os.getenv('private_key_id')
-firebase['private_key'] = os.getenv('private_key')
-with open(firebase_key_path, 'w') as file:
-    json.dump(firebase,file)
-cred = credentials.Certificate(firebase_key_path)
+private_key = os.getenv('private_key')
+
+# Replace literal '\n' with actual newlines
+if private_key:
+    firebase['private_key'] = private_key.replace('\\n', '\n')
+#with open(firebase_key_path, 'w') as file:
+    #json.dump(firebase,file)
+#print(firebase)
+
+cred = credentials.Certificate(firebase)
 initialize_app(cred)
 
 # Modèles Swagger

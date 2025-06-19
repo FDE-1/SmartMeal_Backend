@@ -3,6 +3,7 @@ from ..connection.loader import db
 from ..models.recipe import Recipe
 from ..models.user import User
 from flask_restx import Namespace, Resource, fields
+from sqlalchemy.orm.attributes import flag_modified
 
 api = Namespace('recipes', description='Recipe operations')
 
@@ -24,6 +25,11 @@ recipe_model = api.model('Recipe', {
     'source': fields.String(required=False,description='Source default = null'),
     'recipe_id': fields.Integer(required=False,description='recipe ID'),
     'user_id': fields.Integer(required=True,description='User ID')
+    })
+
+bulk_like_model = api.model('BulkLikeRequest', {
+    'user_id': fields.Integer(required=True, description='User ID'),
+    'recipes': fields.List(fields.Nested(recipe_model), required=True, description='List of recipes to like')
 })
 
 @api.route('/')
@@ -203,7 +209,115 @@ class UserRecipesResource(Resource):
             'source': recipe.source,
             'user_id': recipe.user_id
         } for recipe in recipes]
-      
+    
+@api.route('/bulk-like')
+class RecipeBulkLike(Resource):
+    @api.doc('bulk_like_recipes')
+    @api.expect(bulk_like_model)
+    @api.response(400, 'Invalid input data')
+    @api.response(404, 'User not found')
+    @api.response(500, 'Server error')
+    def post(self):
+        """Like multiple recipes or create and like if they don't exist"""
+        try:
+            data = request.json
+            if not data or 'user_id' not in data or 'recipes' not in data:
+                return {'message': 'Invalid input data'}, 400
+
+            user_id = data['user_id']
+            recipes_data = data['recipes']
+
+            # Verify user exists
+            user = User.query.get_or_404(user_id)
+
+            results = []
+
+            for recipe_data in recipes_data:
+                # Validate required fields for each recipe
+                required_fields = ['title', 'ingredients', 'instructions', 'ner', 'user_id']
+                if not all(field in recipe_data for field in required_fields):
+                    missing = [field for field in required_fields if field not in recipe_data]
+                    results.append({
+                        'title': recipe_data.get('title', 'Unknown'),
+                        'status': 'failed',
+                        'message': f'Missing required fields: {missing}'
+                    })
+                    continue
+
+                # Validate day if provided
+                if 'day' in recipe_data and recipe_data['day'] and recipe_data['day'] not in [
+                    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
+                ]:
+                    results.append({
+                        'title': recipe_data['title'],
+                        'status': 'failed',
+                        'message': 'Invalid day value'
+                    })
+                    continue
+
+                # Check if recipe exists by title (ignoring user_id for creation check)
+                recipe = Recipe.query.filter_by(title=recipe_data['title']).first()
+
+                if recipe:
+                    # Recipe exists, update list_like_id
+                    if recipe.list_like_id is None:
+                        recipe.list_like_id = [user_id]
+                    elif user_id not in recipe.list_like_id:
+                        current_list = recipe.list_like_id or []
+                        current_list.append(user_id)
+                        print(current_list)
+                        recipe.list_like_id = current_list
+                        flag_modified(recipe, 'list_like_id')
+                        db.session.flush()
+                        db.session.commit()
+                    print(recipe.list_like_id)
+                    db.session.commit()  # Commit the update immediately
+                    db.session.refresh(recipe)
+                    print(recipe.list_like_id)
+                    results.append({
+                        'title': recipe.title,
+                        'recipe_id': recipe.recipe_id,
+                        'status': 'updated',
+                        'message': 'User ID added to list_like_id'
+                    })
+                else:
+                    # Create new recipe if no match by title
+                    new_recipe = Recipe(
+                        title=recipe_data['title'],
+                        ingredients=recipe_data['ingredients'],
+                        instructions=recipe_data['instructions'],
+                        ner=recipe_data.get('ner', []),
+                        type=recipe_data.get('type', ''),
+                        calories=recipe_data.get('calories', 0),
+                        nutriments=recipe_data.get('nutriments', {}),
+                        day=recipe_data.get('day'),
+                        link=recipe_data.get('link', ''),
+                        source=recipe_data.get('source', ''),
+                        user_id=recipe_data['user_id'],  # Creator user_id
+                        list_like_id=[user_id]  # Initial like
+                    )
+                    db.session.add(new_recipe)
+                    db.session.commit()  # Commit the creation immediately
+                    results.append({
+                        'title': new_recipe.title,
+                        'recipe_id': new_recipe.recipe_id,
+                        'status': 'created',
+                        'message': 'Recipe created and user ID added to list_like_id'
+                    })
+
+            return {
+                'message': 'Bulk like operation completed',
+                'results': results
+            }, 200
+
+        except Exception as e:
+            db.session.rollback()
+            return {
+                'message': 'Failed to process bulk like operation',
+                'error': str(e)
+            }, 500
+
+
 @api.route('/testsuite/recipes')
 class RecipeTestSuite(Resource):
     @api.doc('run_recipe_test_suite')
