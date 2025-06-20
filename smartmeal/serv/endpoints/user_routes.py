@@ -317,6 +317,7 @@ class RefreshToken(Resource):
         except Exception as e:
             api.abort(500, "Erreur lors du rafraîchissement du jeton", error=str(e))
 
+
 @api.route('/forgot-password')
 class ForgotPassword(Resource):
     @api.doc('forgot_password')

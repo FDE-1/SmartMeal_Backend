@@ -32,6 +32,19 @@ bulk_like_model = api.model('BulkLikeRequest', {
     'recipes': fields.List(fields.Nested(recipe_model), required=True, description='List of recipes to like')
 })
 
+liked_recipe_model = api.model('LikedRecipe', {
+    'recipe_id': fields.Integer(required=True, description='The recipe ID'),
+    'title': fields.String(required=True, description='The recipe title'),
+    'user_id': fields.Integer(required=True, description='The user ID who created the recipe'),
+    'list_like_id': fields.List(fields.Integer, description='List of user IDs who liked the recipe'),
+    'ingredients': fields.List(fields.String, description='List of ingredients'),
+    'instructions': fields.List(fields.String, description='List of instructions'),
+    'ner': fields.List(fields.String, description='Named entity recognition tags'),
+    'type': fields.String(description='Recipe type'),
+    'calories': fields.Integer(description='Calorie count'),
+    'nutriments': fields.Raw(description='Nutritional information')
+})
+
 @api.route('/')
 class RecipeList(Resource):
     @api.doc('list_recipes')
@@ -317,6 +330,64 @@ class RecipeBulkLike(Resource):
                 'error': str(e)
             }, 500
 
+from flask_restx import Namespace, Resource, fields
+
+api = Namespace('recipes', description='Recipe operations')
+
+# Define the model for the liked recipes response
+liked_recipe_model = api.model('LikedRecipe', {
+    'recipe_id': fields.Integer(required=True, description='The recipe ID'),
+    'title': fields.String(required=True, description='The recipe title'),
+    'user_id': fields.Integer(required=True, description='The user ID who created the recipe'),
+    'list_like_id': fields.List(fields.Integer, description='List of user IDs who liked the recipe'),
+    'ingredients': fields.List(fields.String, description='List of ingredients'),
+    'instructions': fields.List(fields.String, description='List of instructions'),
+    'ner': fields.List(fields.String, description='Named entity recognition tags'),
+    'type': fields.String(description='Recipe type'),
+    'calories': fields.Integer(description='Calorie count'),
+    'nutriments': fields.Raw(description='Nutritional information')
+})
+
+@api.route('/liked')
+class RecipeLikedList(Resource):
+    @api.doc('get_liked_recipes')
+    @api.response(200, 'Success', [liked_recipe_model])
+    @api.response(400, 'Invalid user_id')
+    @api.response(404, 'User not found')
+    @api.param('user_id', 'The ID of the user', type=int, required=True)
+    def get(self):
+        """Retrieve the list of recipes liked by a user"""
+        user_id = request.args.get('user_id')
+        if not user_id or not user_id.isdigit():
+            return {'message': 'Invalid user_id'}, 400
+
+        user_id = int(user_id)
+        # Verify user exists (optional, depending on your requirements)
+        user = User.query.get(user_id)
+        if not user:
+            return {'message': 'User not found'}, 404
+
+        # Query recipes where user_id is in list_like_id
+        liked_recipes = Recipe.query.filter(Recipe.list_like_id.contains([user_id])).all()
+
+        if not liked_recipes:
+            return {'message': 'No liked recipes found'}, 200
+
+        # Serialize the results
+        results = [{
+            'recipe_id': recipe.recipe_id,
+            'title': recipe.title,
+            'user_id': recipe.user_id,
+            'list_like_id': recipe.list_like_id,
+            'ingredients': recipe.ingredients,
+            'instructions': recipe.instructions,
+            'ner': recipe.ner,
+            'type': recipe.type,
+            'calories': recipe.calories,
+            'nutriments': recipe.nutriments
+        } for recipe in liked_recipes]
+
+        return {'message': 'Liked recipes retrieved', 'recipes': results}, 200
 
 @api.route('/testsuite/recipes')
 class RecipeTestSuite(Resource):
