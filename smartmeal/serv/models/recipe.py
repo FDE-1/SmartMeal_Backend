@@ -1,6 +1,6 @@
 from sqlalchemy import BIGINT
 from ..connection.loader import db
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 
 class Recipe(db.Model):
     __tablename__ = 'recipes'
@@ -17,4 +17,4 @@ class Recipe(db.Model):
     source = db.Column(db.String(50))
     calories = db.Column(db.Integer)
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    list_like_id = db.Column(db.ARRAY(BIGINT))
+    list_like_id = db.Column(ARRAY(BIGINT))

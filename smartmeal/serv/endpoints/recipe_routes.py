@@ -4,6 +4,7 @@ from ..models.recipe import Recipe
 from ..models.user import User
 from flask_restx import Namespace, Resource, fields
 from sqlalchemy.orm.attributes import flag_modified
+from sqlalchemy import text
 
 api = Namespace('recipes', description='Recipe operations')
 
@@ -356,35 +357,34 @@ class RecipeLikedList(Resource):
     @api.response(404, 'User not found')
     @api.param('user_id', 'The ID of the user', type=int, required=True)
     def get(self):
-        """Retrieve the list of recipes liked by a user"""
         user_id = request.args.get('user_id')
         if not user_id or not user_id.isdigit():
             return {'message': 'Invalid user_id'}, 400
 
         user_id = int(user_id)
-        # Verify user exists (optional, depending on your requirements)
         user = User.query.get(user_id)
         if not user:
             return {'message': 'User not found'}, 404
 
-        # Query recipes where user_id is in list_like_id
-        liked_recipes = Recipe.query.filter(Recipe.list_like_id.contains([user_id])).all()
+        liked_recipes = db.session.execute(
+            text("SELECT * FROM recipes WHERE list_like_id @> ARRAY[:user_id]::bigint[]"),
+            {"user_id": user_id}
+        ).fetchall()
 
         if not liked_recipes:
             return {'message': 'No liked recipes found'}, 200
 
-        # Serialize the results
         results = [{
-            'recipe_id': recipe.recipe_id,
-            'title': recipe.title,
-            'user_id': recipe.user_id,
-            'list_like_id': recipe.list_like_id,
-            'ingredients': recipe.ingredients,
-            'instructions': recipe.instructions,
-            'ner': recipe.ner,
-            'type': recipe.type,
-            'calories': recipe.calories,
-            'nutriments': recipe.nutriments
+            'recipe_id': recipe[0],
+            'title': recipe[1],
+            'user_id': recipe[2],
+            'list_like_id': recipe[3],
+            'ingredients': recipe[4],
+            'instructions': recipe[5],
+            'ner': recipe[6],
+            'type': recipe[7],
+            'calories': recipe[8],
+            'nutriments': recipe[9]
         } for recipe in liked_recipes]
 
         return {'message': 'Liked recipes retrieved', 'recipes': results}, 200
