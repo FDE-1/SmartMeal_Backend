@@ -229,13 +229,19 @@ class UserLogin(Resource):
                 elif error_message == "INVALID_PASSWORD":
                     api.abort(401, "Mot de passe incorrect")
                 api.abort(400, error_message)
-
+            
             id_token = response_data["idToken"]
             decoded_token = auth.verify_id_token(id_token, check_revoked=True)
             if not decoded_token.get("email_verified", False):
                 api.abort(403, "Email non vérifié. Veuillez vérifier votre email.")
+            firebase_uid = decoded_token["uid"]
+
+            user = User.query.filter_by(firebase_uid=firebase_uid).first()
+            if not user:
+                api.abort(404, "Utilisateur non trouvé dans la base de données")
 
             return {
+                'user_id': user.user_id,
                 'message': 'Authentification réussie',
                 'idToken': id_token,
                 'refreshToken': response_data["refreshToken"]
