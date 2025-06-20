@@ -162,10 +162,16 @@ class UserResource(Resource):
                 user_password=data['user_password'],
                 firebase_uid=uid 
             )
+        
             db.session.add(new_user)
             db.session.commit()
-
-            return new_user, 201
+            result = {
+            'user_id': uid,
+            'username': data['user_name'],
+            'email': data['user_email'],
+            # Add other fields as per your User model
+            }
+            return result, 201
         except Exception as e:
             db.session.rollback()
             api.abort(500, "Erreur de création (interne)", error=str(e))
@@ -240,6 +246,12 @@ class UserLogin(Resource):
             if not user:
                 api.abort(404, "Utilisateur non trouvé dans la base de données")
 
+            result = {
+            'user_id': user.user_id,
+            'username': user.user_email,
+            'email': data['email'],
+            # Add other fields as per your User model
+            }
             return {
                 'user_id': user.user_id,
                 'message': 'Authentification réussie',
