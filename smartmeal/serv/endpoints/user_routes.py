@@ -1,6 +1,8 @@
 from flask import jsonify, request, current_app
 from ..connection.loader import db
 from ..models.user import User
+from ..models.preferences import Preferences
+from ..models.inventory import Inventory
 from flask_restx import Namespace, Resource, fields
 from sqlalchemy import text
 import time
@@ -164,6 +166,29 @@ class UserResource(Resource):
             )
 
             db.session.add(new_user)
+            db.session.flush()  # Obtenir user_id avant commit
+
+            # Créer les préférences par défaut
+            new_preference = Preferences(
+                user_id=new_user.user_id,
+                allergy={},
+                diet='',
+                goal='',
+                new=1,
+                number_of_meals=3,
+                grocery_day='Monday',
+                language='fr'
+            )
+            db.session.add(new_preference)
+
+            new_inventory = Inventory(
+                user_id=new_user.user_id,
+                ustensils=[],
+                grocery=[],
+                fresh_produce=[]
+            )
+            db.session.add(new_inventory)
+
             db.session.commit()
             created_user = User.query.filter_by(firebase_uid=uid).first()
             result = {
