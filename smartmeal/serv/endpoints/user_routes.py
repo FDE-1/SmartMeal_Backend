@@ -39,7 +39,7 @@ user_model = api.model('User', {
     'user_name': fields.String(required=True, description='Prénom'),
     'user_surname': fields.String(required=True, description='Nom'),
     'user_email': fields.String(required=True, description='Email'),
-    'user_password': fields.String(required=True, description='Mot de passe')
+    'user_password': fields.String(required=True, description='Mot de passe'),
 })
 
 login_model = api.model('Login', {
@@ -157,18 +157,21 @@ class UserResource(Resource):
             # Créer l'utilisateur dans SQLAlchemy
             new_user = User(
                 user_name=data['user_name'],
-                user_surname=data['user_name'],
+                user_surname=data['user_surname'],
                 user_email=data['user_email'],
                 user_password=data['user_password'],
                 firebase_uid=uid 
             )
-        
+
             db.session.add(new_user)
             db.session.commit()
+            created_user = User.query.filter_by(firebase_uid=uid).first()
             result = {
-            'user_id': uid,
-            'username': data['user_name'],
-            'email': data['user_email'],
+            'user_id': created_user.user_id,
+            'user_name': created_user.user_name,
+            'user_surname': created_user.user_surname,
+            'user_email': created_user.user_email,
+            'user_password': created_user.user_password
             # Add other fields as per your User model
             }
             return result, 201
@@ -248,8 +251,10 @@ class UserLogin(Resource):
 
             result = {
             'user_id': user.user_id,
-            'username': user.user_email,
-            'email': data['email'],
+            'user_name': user.user_name,
+            'user_surname': user.user_surname,
+            'user_email': user.user_email,
+            'user_password': user.user_password
             # Add other fields as per your User model
             }
             return result, 200
