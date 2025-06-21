@@ -252,12 +252,7 @@ class UserLogin(Resource):
             'email': data['email'],
             # Add other fields as per your User model
             }
-            return {
-                'user_id': user.user_id,
-                'message': 'Authentification réussie',
-                'idToken': id_token,
-                'refreshToken': response_data["refreshToken"]
-            }, 200
+            return result, 200
         except Exception as e:
             api.abort(500, "Erreur d'authentification", error=str(e))
 
