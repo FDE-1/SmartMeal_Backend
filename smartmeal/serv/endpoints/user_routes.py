@@ -201,6 +201,13 @@ class UserDetail(Resource):
             user = User.query.get(user_id)
             if not user:
                 api.abort(404, "Utilisateur non trouvé")
+            
+            try:
+                auth.delete_user(user.firebase_uid)
+            except auth.UserNotFoundError:
+                print("user not found in firabase")
+            except Exception as e:
+                api.abort(500, f"Erreur lors de la suppression dans Firebase: {str(e)}")
 
             db.session.delete(user)        
             db.session.commit()
