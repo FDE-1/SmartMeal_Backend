@@ -18,7 +18,7 @@ seach_model = api.model('Search', {
 })
 
 update_model = api.model('Update', {
-    'inventory_id': fields.Integer(required=True, readOnly=True, description='Identifiant unique'),
+    'user_id': fields.Integer(required=True, readOnly=True, description='Identifiant unique'),
     'ustensils': fields.List(fields.Raw(), description="List of utensils"),
     'grocery': fields.List(fields.Raw(), description="List of grocery items"),
     'fresh_produce': fields.List(fields.Raw(), description="List of fresh produce items"),
@@ -110,7 +110,8 @@ class InventoryResource(Resource):
         """Met à jour complètement un inventaire avec vérification du commit"""
         try:
             data = api.payload
-            inventory = Inventory.query.get(data['inventory_id'])
+            inventory = Inventory.query.filter_by(user_id=data['user_id']).first()
+            #inventory = Inventory.query.get(data['inventory_id'])
             
             if not inventory:
                 api.abort(404, "Inventaire non trouvé")

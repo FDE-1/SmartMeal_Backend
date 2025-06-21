@@ -24,7 +24,7 @@ preference_id_model=api.model('user_id',{
 })
 
 update_model = api.model('update', {
-    "preference_id": fields.Integer(),
+    "user_id": fields.Integer(),
     "allergy": fields.Raw(required=True, description="ID of the user"),
     "goal": fields.String(required=True, description="ID of the user"),
     "number_of_meals": fields.Integer(required=True, description="ID of the user"),
@@ -108,8 +108,8 @@ class PreferenceById(Resource):
                 return {'message': 'Aucune donnée reçue'}, 400
             if 'preference_id' not in data:
                 return {'message': 'preference_id est requis'}, 400
-
-            preference = Preferences.query.filter_by(preference_id=data['preference_id']).first()
+            preference = Preferences.query.filter_by(user_id=data['user_id']).first()
+           # preference = Preferences.query.filter_by(preference_id=data['preference_id']).first()
             if 'user_id' in data:
                 preference.user_id = data['user_id']
             if 'allergy' in data:
