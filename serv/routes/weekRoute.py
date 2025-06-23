@@ -1,7 +1,7 @@
 from flask_restx import Namespace, Resource
-from loaders.api import api
-from controllers.weekController import list_all_weeks, handle_week_creation, get_week_details, handle_week_update, handle_week_deletion, get_user_weeks, get_user_week_data
-from models.input.week.week_model import week_model
+from serv.loaders.api import api
+from serv.controllers.weekController import list_all_weeks, handle_week_creation, get_week_details, handle_week_update, handle_week_deletion, get_user_weeks, get_user_week_data
+from serv.models.input.week.week_model import week_model
 
 week_route = Namespace('weeks', description='Weekly meal planning operations')
 

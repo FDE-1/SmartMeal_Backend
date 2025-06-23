@@ -1,5 +1,5 @@
 from flask_restx import fields
-from loaders.api import api
+from serv.loaders.api import api
 
 user_model = api.model('user_model', {
     'user_id': fields.Integer(readOnly=True, description='Identifiant unique'),

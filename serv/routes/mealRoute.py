@@ -1,8 +1,8 @@
 from flask_restx import Namespace, Resource
-from loaders.api import api
-from controllers.mealController import generate_meal_plan, handle_shopping_list_request
-from models.input.meal.user_id_model import user_id_model
-from models.input.meal.shopping_list import shopping_list_input
+from serv.loaders.api import api
+from serv.controllers.mealController import generate_meal_plan, handle_shopping_list_request
+from serv.models.input.meal.user_id_model import user_id_model
+from serv.models.input.meal.shopping_list import shopping_list_input
 from flask import request
 from flask import abort
 

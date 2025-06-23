@@ -1,4 +1,4 @@
-from services.weekService import get_all_weeks, create_week_in_db, get_week_by_id, update_week_in_db, delete_week_from_db, get_weeks_by_user, get_user_week
+from serv.services.weekService import get_all_weeks, create_week_in_db, get_week_by_id, update_week_in_db, delete_week_from_db, get_weeks_by_user, get_user_week
 from flask import request
 from flask_restx import abort
 from firebase_admin import auth

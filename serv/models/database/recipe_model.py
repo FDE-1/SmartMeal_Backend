@@ -1,5 +1,5 @@
 from sqlalchemy import BIGINT
-from loaders.postgres import db
+from serv.loaders.postgres import db
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 
 class Recipe(db.Model):

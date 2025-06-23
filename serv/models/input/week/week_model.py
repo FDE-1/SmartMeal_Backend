@@ -1,5 +1,5 @@
 from flask_restx import fields
-from loaders.api import api
+from serv.loaders.api import api
 
 day_fields = {
     'lundi': fields.List(fields.Raw, required=False),

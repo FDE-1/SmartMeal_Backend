@@ -1,9 +1,9 @@
 from flask_restx import Namespace, Resource
-from loaders.api import api
-from controllers.recipeController import list_all_recipes, handle_recipe_creation, get_recipe_details, handle_recipe_update, handle_recipe_deletion, get_user_recipes_data, process_bulk_like, handle_liked_recipes_request
-from models.input.recipe.recipe_model import recipe_model
-from models.input.recipe.bulk_like_model import bulk_like_model
-from models.input.recipe.like_recipe_model import liked_recipe_model
+from serv.loaders.api import api
+from serv.controllers.recipeController import list_all_recipes, handle_recipe_creation, get_recipe_details, handle_recipe_update, handle_recipe_deletion, get_user_recipes_data, process_bulk_like, handle_liked_recipes_request
+from serv.models.input.recipe.recipe_model import recipe_model
+from serv.models.input.recipe.bulk_like_model import bulk_like_model
+from serv.models.input.recipe.like_recipe_model import liked_recipe_model
 from flask import request
 from flask import abort
 

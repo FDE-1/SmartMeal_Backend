@@ -1,7 +1,7 @@
 from flask_restx import Namespace, Resource
-from loaders.api import api
-from controllers.shopping_listController import list_all_shopping_lists, handle_shopping_list_creation, get_shopping_list_details, handle_shopping_list_update, handle_shopping_list_deletion, get_user_shopping_lists_data
-from models.input.shopping_list.shopping_list_model import shopping_list_model
+from serv.loaders.api import api
+from serv.controllers.shopping_listController import list_all_shopping_lists, handle_shopping_list_creation, get_shopping_list_details, handle_shopping_list_update, handle_shopping_list_deletion, get_user_shopping_lists_data
+from serv.models.input.shopping_list.shopping_list_model import shopping_list_model
 
 shopping_list_route = Namespace('shopping_lists', description='Shopping list operations')
 

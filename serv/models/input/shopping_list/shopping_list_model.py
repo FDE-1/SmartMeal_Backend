@@ -1,5 +1,5 @@
 from flask_restx import fields
-from loaders.api import api
+from serv.loaders.api import api
 
 shopping_list_model = api.model('ShoppingList', {
     'shoppinglist_id': fields.Integer(readOnly=True),

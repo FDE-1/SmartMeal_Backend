@@ -1,6 +1,6 @@
 from flask_restx import abort
 from flask import request
-from services.preferenceService import create_preference_in_db, update_preference, get_preference_by_user, delete_preference
+from serv.services.preferenceService import create_preference_in_db, update_preference, get_preference_by_user, delete_preference
 
 def handle_preference_creation():
     """Validates and processes preference creation"""

@@ -1,5 +1,5 @@
 from flask_restx import Api
-from errors.exceptions import AppError, ControllerError, ServiceError, LoaderError, ModelError, RouteError, FirebaseError
+from serv.errors.exceptions import AppError, ControllerError, ServiceError, LoaderError, ModelError, RouteError, FirebaseError
 
 def register_error_handlers(api: Api):
     @api.errorhandler(AppError)

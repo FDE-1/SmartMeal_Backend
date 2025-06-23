@@ -1,4 +1,4 @@
-from services.user_recipeService import get_all_user_recipes, create_user_recipe_in_db, get_user_recipes_by_user_id, get_user_recipe_by_id, update_user_recipe_in_db, delete_user_recipe_from_db
+from serv.services.user_recipeService import get_all_user_recipes, create_user_recipe_in_db, get_user_recipes_by_user_id, get_user_recipe_by_id, update_user_recipe_in_db, delete_user_recipe_from_db
 from flask_restx import abort
 from flask import request
 

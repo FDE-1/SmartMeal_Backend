@@ -1,6 +1,6 @@
-from models.database.recipe_model import Recipe
-from models.database.user_model import User
-from loaders.postgres import db  
+from serv.models.database.recipe_model import Recipe
+from serv.models.database.user_model import User
+from serv.loaders.postgres import db  
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy import text
 

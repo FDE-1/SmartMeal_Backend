@@ -1,5 +1,5 @@
-from models.database.week_model import Week
-from loaders.postgres import db  
+from serv.models.database.week_model import Week
+from serv.loaders.postgres import db  
 from flask_restx import abort
 
 def get_all_weeks():

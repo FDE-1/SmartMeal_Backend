@@ -1,5 +1,5 @@
-from models.database.preference_model import Preferences
-from loaders.postgres import db  
+from serv.models.database.preference_model import Preferences
+from serv.loaders.postgres import db  
 
 def create_preference_in_db(preference_data):
     """Handles preference creation in database"""

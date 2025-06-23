@@ -1,6 +1,6 @@
 from flask_restx import fields
-from loaders.api import api
-from models.input.recipe.recipe_model import recipe_model
+from serv.loaders.api import api
+from serv.models.input.recipe.recipe_model import recipe_model
 
 bulk_like_model = api.model('BulkLikeRequest', {
     'user_id': fields.Integer(required=True, description='User ID'),

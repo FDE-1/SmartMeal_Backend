@@ -1,10 +1,10 @@
 from flask_restx import Namespace, Resource
-from loaders.api import api
-from models.input.preference.preference_model import preference_model
-from controllers.preferenceController import handle_preference_creation, handle_get_preference, handle_update_preference, handle_delete_preference
+from serv.loaders.api import api
+from serv.models.input.preference.preference_model import preference_model
+from serv.controllers.preferenceController import handle_preference_creation, handle_get_preference, handle_update_preference, handle_delete_preference
 from flask import request
-from models.input.preference.preference_id_model import preference_id_model
-from models.input.preference.update_model import update_model
+from serv.models.input.preference.preference_id_model import preference_id_model
+from serv.models.input.preference.update_model import update_model
 
 preference_route = Namespace('preferences', description='User preferences operations')
 

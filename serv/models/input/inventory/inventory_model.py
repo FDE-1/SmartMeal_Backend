@@ -1,5 +1,5 @@
 from flask_restx import fields
-from loaders.api import api
+from serv.loaders.api import api
 
 inventory_model = api.model('Inventory', {
     'user_id': fields.Integer(required=True, description="ID of the user"),

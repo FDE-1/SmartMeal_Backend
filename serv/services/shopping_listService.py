@@ -1,5 +1,5 @@
-from models.database.shoppinglist_model import ShoppingList
-from loaders.postgres import db  
+from serv.models.database.shoppinglist_model import ShoppingList
+from serv.loaders.postgres import db  
 from flask_restx import abort
 
 def get_all_shopping_lists():

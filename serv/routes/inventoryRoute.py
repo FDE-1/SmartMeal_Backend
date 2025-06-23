@@ -1,9 +1,9 @@
 from flask_restx import Namespace, Resource
-from loaders.api import api
-from controllers.inventoryController import get_all_inventories, format_inventories, handle_inventory_creation, handle_get_inventory, handle_update_inventory, handle_delete_inventory, handle_get_inventory_by_user
-from models.input.inventory.inventory_model import inventory_model
-from models.input.inventory.search_model import seach_model
-from models.input.inventory.search_user_model import search_user_model
+from serv.loaders.api import api
+from serv.controllers.inventoryController import get_all_inventories, format_inventories, handle_inventory_creation, handle_get_inventory, handle_update_inventory, handle_delete_inventory, handle_get_inventory_by_user
+from serv.models.input.inventory.inventory_model import inventory_model
+from serv.models.input.inventory.search_model import seach_model
+from serv.models.input.inventory.search_user_model import search_user_model
 from flask import abort
 from flask import request
 

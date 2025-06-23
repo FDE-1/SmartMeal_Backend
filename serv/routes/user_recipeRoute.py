@@ -1,7 +1,7 @@
 from flask_restx import Namespace, Resource
-from loaders.api import api
-from controllers.user_recipeController import list_all_user_recipes, handle_user_recipe_creation, get_user_recipes_data, get_user_recipe_details, handle_user_recipe_update, handle_user_recipe_deletion
-from models.input.user_recipe.user_recipe_model import user_recipe_model
+from serv.loaders.api import api
+from serv.controllers.user_recipeController import list_all_user_recipes, handle_user_recipe_creation, get_user_recipes_data, get_user_recipe_details, handle_user_recipe_update, handle_user_recipe_deletion
+from serv.models.input.user_recipe.user_recipe_model import user_recipe_model
 
 user_reciperoute = Namespace('user_recipes', description='User recipe personalization operations')
 

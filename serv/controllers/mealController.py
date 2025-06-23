@@ -1,4 +1,4 @@
-from services.mealService import get_user_data, format_recipes, call_meal_plan_api, get_user_inventory, generate_shopping_list_api
+from serv.services.mealService import get_user_data, format_recipes, call_meal_plan_api, get_user_inventory, generate_shopping_list_api
 from flask_restx import abort
 from flask import request
 

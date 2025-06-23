@@ -1,5 +1,5 @@
 from flask_restx import fields
-from loaders.api import api
+from serv.loaders.api import api
 
 recipe_model = api.model('Recipe', {
     'title': fields.String(required=True, description='Titre de la recette'),

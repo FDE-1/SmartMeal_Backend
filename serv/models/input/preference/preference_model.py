@@ -1,5 +1,5 @@
 from flask_restx import fields
-from loaders.api import api
+from serv.loaders.api import api
 
 preference_model = api.model('Preference', {
     'user_id': fields.Integer(required=True, description="ID of the user"),

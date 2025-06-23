@@ -1,4 +1,4 @@
-from loaders.postgres import db
+from serv.loaders.postgres import db
 from sqlalchemy.dialects.postgresql import JSONB
 
 class UserRecipe(db.Model):

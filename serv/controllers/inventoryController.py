@@ -1,4 +1,4 @@
-from services.inventoryService import create_inventory, get_all_inventories, update_inventory, delete_inventory, get_inventory_by_id, get_inventory_by_user
+from serv.services.inventoryService import create_inventory, get_all_inventories, update_inventory, delete_inventory, get_inventory_by_id, get_inventory_by_user
 from flask_restx import abort
 from flask import request
 

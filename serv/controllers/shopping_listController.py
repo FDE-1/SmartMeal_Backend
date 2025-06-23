@@ -1,4 +1,4 @@
-from services.shopping_listService import get_all_shopping_lists, create_shopping_list_in_db, get_shopping_list, update_shopping_list, delete_shopping_list, get_user_shopping_lists
+from serv.services.shopping_listService import get_all_shopping_lists, create_shopping_list_in_db, get_shopping_list, update_shopping_list, delete_shopping_list, get_user_shopping_lists
 from flask_restx import abort
 from flask import request
 

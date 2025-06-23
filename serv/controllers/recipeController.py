@@ -1,7 +1,7 @@
 from flask_restx import abort
 from flask import request
-from models.database.user_model import User
-from services.recipeService import get_all_recipes, create_recipe_in_db, update_recipe_in_db, get_recipe_by_id, delete_recipe_from_db, get_user_recipes, like_or_create_recipe, get_liked_recipes
+from serv.models.database.user_model import User
+from serv.services.recipeService import get_all_recipes, create_recipe_in_db, update_recipe_in_db, get_recipe_by_id, delete_recipe_from_db, get_user_recipes, like_or_create_recipe, get_liked_recipes
 def list_all_recipes():
     """Formats recipes data for response"""
     recipes = get_all_recipes()

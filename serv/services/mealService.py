@@ -1,6 +1,6 @@
-from models.database.inventory_model import Inventory
-from models.database.preference_model import Preferences
-from models.database.recipe_model import Recipe
+from serv.models.database.inventory_model import Inventory
+from serv.models.database.preference_model import Preferences
+from serv.models.database.recipe_model import Recipe
 import requests
 
 API_BASE_URL = 'http://c58c-2a01-e0a-ee7-db30-f895-736c-3a4c-218c.ngrok-free.app'

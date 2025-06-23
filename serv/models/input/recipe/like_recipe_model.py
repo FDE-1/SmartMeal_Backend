@@ -1,5 +1,5 @@
 from flask_restx import fields
-from loaders.api import api
+from serv.loaders.api import api
 
 liked_recipe_model = api.model('LikedRecipe', {
     'recipe_id': fields.Integer(required=True, description='The recipe ID'),

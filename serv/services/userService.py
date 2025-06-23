@@ -1,7 +1,7 @@
-from models.database.user_model import User
-from models.database.preference_model import Preferences
-from models.database.inventory_model import Inventory
-from loaders.postgres import db  
+from serv.models.database.user_model import User
+from serv.models.database.preference_model import Preferences
+from serv.models.database.inventory_model import Inventory
+from serv.loaders.postgres import db  
 from flask_restx import abort
 
 def get_all_users_service():

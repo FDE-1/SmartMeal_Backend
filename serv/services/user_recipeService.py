@@ -1,6 +1,6 @@
-from loaders.postgres import db  
+from serv.loaders.postgres import db  
 from flask_restx import abort
-from models.database.user_recipe_model import UserRecipe
+from serv.models.database.user_recipe_model import UserRecipe
 
 def get_all_user_recipes():
     """Retrieves all user recipes from database"""

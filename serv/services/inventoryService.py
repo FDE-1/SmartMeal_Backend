@@ -1,5 +1,5 @@
-from models.database.inventory_model import Inventory
-from loaders.postgres import db  
+from serv.models.database.inventory_model import Inventory
+from serv.loaders.postgres import db  
 
 def get_all_inventories():
     """Retrieves all inventory records"""

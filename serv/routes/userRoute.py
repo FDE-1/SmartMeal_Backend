@@ -1,11 +1,11 @@
 from flask_restx import Namespace, Resource
-from models.input.user.user_model import user_model 
-from models.input.user.login_model import login_model
-from models.input.user.resend_email_model import resend_email_model
-from models.input.user.refresh_model import refresh_token_model
-from models.input.user.forgot_password_model import forgot_password_model
-from models.input.user.change_model import change_info_model
-from controllers.userController import get_all_users, create_user, get_user, delete_user, login_user, handle_resend_verification, handle_token_refresh, handle_password_reset_request, handle_user_info_update
+from serv.models.input.user.user_model import user_model 
+from serv.models.input.user.login_model import login_model
+from serv.models.input.user.resend_email_model import resend_email_model
+from serv.models.input.user.refresh_model import refresh_token_model
+from serv.models.input.user.forgot_password_model import forgot_password_model
+from serv.models.input.user.change_model import change_info_model
+from serv.controllers.userController import get_all_users, create_user, get_user, delete_user, login_user, handle_resend_verification, handle_token_refresh, handle_password_reset_request, handle_user_info_update
 from loaders.api import api
 
 user_route = Namespace('users', description='Opérations liées aux utilisateurs')

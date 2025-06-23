@@ -1,5 +1,5 @@
-from services.userService import get_all_users_service, create_user_service, get_user_service, delete_user_service, get_user_by_uid_service, update_user_info
-from services.firebaseService import delete_firebase_user, create_firebase_user, authenticate_firebase_user, resend_verification_email, refresh_firebase_token, send_password_reset_email
+from serv.services.userService import get_all_users_service, create_user_service, get_user_service, delete_user_service, get_user_by_uid_service, update_user_info
+from serv.services.firebaseService import delete_firebase_user, create_firebase_user, authenticate_firebase_user, resend_verification_email, refresh_firebase_token, send_password_reset_email
 from flask import request
 from flask_restx import abort
 from firebase_admin import auth
