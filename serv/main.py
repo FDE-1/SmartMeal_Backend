@@ -1,17 +1,17 @@
 from flask import Flask
 from flask_cors import CORS
-from loaders.postgres import init_db, db
-from routes.userRoute import user_route
-from routes.weekRoute import week_route
-from routes.user_recipeRoute import user_reciperoute
-from routes.shopping_listRoute import shopping_list_route
-from routes.mealRoute import meal_route
-from routes.recipe_route import recipe_route
-from routes.inventoryRoute import inventory_route
-from routes.preferenceRoute import preference_route
-from loaders.api import api
-from loaders.firebase import firebase_app
-from errors.error_handlers import register_error_handlers
+from ..serv.loaders.postgres import init_db, db
+from ..serv.routes.userRoute import user_route
+from ..serv.routes.weekRoute import week_route
+from ..serv.routes.user_recipeRoute import user_reciperoute
+from ..serv.routes.shopping_listRoute import shopping_list_route
+from ..serv.routes.mealRoute import meal_route
+from ..serv.routes.recipe_route import recipe_route
+from ..serv.routes.inventoryRoute import inventory_route
+from ..serv.routes.preferenceRoute import preference_route
+from ..serv.loaders.api import api
+from ..serv.loaders.firebase import firebase_app
+from ..serv.errors.error_handlers import register_error_handlers
 app = Flask(__name__)
 CORS(app)
 init_db(app)
