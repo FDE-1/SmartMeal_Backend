@@ -330,11 +330,7 @@ class RecipeBulkLike(Resource):
                 'message': 'Failed to process bulk like operation',
                 'error': str(e)
             }, 500
-
-from flask_restx import Namespace, Resource, fields
-
-api = Namespace('recipes', description='Recipe operations')
-
+        
 # Define the model for the liked recipes response
 liked_recipe_model = api.model('LikedRecipe', {
     'recipe_id': fields.Integer(required=True, description='The recipe ID'),
