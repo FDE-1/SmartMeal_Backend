@@ -33,6 +33,11 @@ bulk_like_model = api.model('BulkLikeRequest', {
     'recipes': fields.List(fields.Nested(recipe_model), required=True, description='List of recipes to like')
 })
 
+delete_like_model = api.model('DeleteLikeRequest', {
+    'user_id': fields.Integer(required=True, description='User ID'),
+    'recipe_titles': fields.List(fields.String(required=True, description='Titre de la recette'))
+})
+
 liked_recipe_model = api.model('LikedRecipe', {
     'recipe_id': fields.Integer(required=True, description='The recipe ID'),
     'title': fields.String(required=True, description='The recipe title'),
@@ -330,7 +335,72 @@ class RecipeBulkLike(Resource):
                 'message': 'Failed to process bulk like operation',
                 'error': str(e)
             }, 500
-        
+
+
+@api.route('/delete-likes')
+class DeleteLikes(Resource):
+    @api.doc('delete_likes')
+    @api.expect(delete_like_model)
+    @api.response(400, 'Invalid input data')
+    @api.response(404, 'User not found')
+    @api.response(500, 'Server error')
+    def post(self):
+        """Like multiple recipes or create and like if they don't exist"""
+        try:
+            data = request.json
+            if not data or 'user_id' not in data or 'recipe_titles' not in data:
+                return {'message': 'Invalid input data'}, 400
+
+            user_id = data['user_id']
+            titles_list = data['recipe_titles']
+
+            # Verify user exists
+            user = User.query.get_or_404(user_id)
+
+            results = []
+
+            for title_ in titles_list:
+                
+                # Check if recipe exists by title (ignoring user_id for creation check)
+                recipe = Recipe.query.filter_by(title=title_).first()
+
+                if recipe:
+                    # Recipe exists, update list_like_id
+                    if user_id not in recipe.list_like_id:
+                        continue
+                    else:
+                        current_list = recipe.list_like_id
+                        current_list.remove(user_id)
+                        flag_modified(recipe, 'list_like_id')
+                        db.session.flush()
+                        db.session.commit()
+                    print(recipe.list_like_id)
+                    db.session.commit()  # Commit the update immediately
+                    db.session.refresh(recipe)
+                    print(recipe.list_like_id)
+                    results.append({
+                        'title': recipe.title,
+                        'recipe_id': recipe.recipe_id,
+                        'status': 'updated',
+                        'message': 'User ID delete in list_like_id'
+                    })
+                else:
+                    continue
+            return {
+                'message': 'Delete succes',
+                'results': results
+            }, 200
+
+        except Exception as e:
+            db.session.rollback()
+            return {
+                'message': 'Failed to delete like',
+                'error': str(e)
+            }, 500
+
+
+
+
 # Define the model for the liked recipes response
 liked_recipe_model = api.model('LikedRecipe', {
     'recipe_id': fields.Integer(required=True, description='The recipe ID'),
