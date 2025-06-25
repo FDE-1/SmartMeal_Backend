@@ -301,6 +301,7 @@ class RecipeBulkLike(Resource):
                     })
                 else:
                     # Create new recipe if no match by title
+                    
                     new_recipe = Recipe(
                         title=recipe_data['title'],
                         ingredients=recipe_data['ingredients'],
@@ -317,6 +318,7 @@ class RecipeBulkLike(Resource):
                     )
                     db.session.add(new_recipe)
                     db.session.commit()  # Commit the creation immediately
+                    print(new_recipe)
                     results.append({
                         'title': new_recipe.title,
                         'recipe_id': new_recipe.recipe_id,
@@ -442,15 +444,15 @@ class RecipeLikedList(Resource):
 
         results = [{
             'recipe_id': recipe[0],
-            'title': recipe[1],
-            'user_id': recipe[2],
-            'list_like_id': recipe[3],
-            'ingredients': recipe[4],
-            'instructions': recipe[5],
-            'ner': recipe[6],
-            'type': recipe[7],
-            'calories': recipe[8],
-            'nutriments': recipe[9]
+            'title': recipe[10],
+            'user_id': recipe[11],
+            'list_like_id': recipe[12],
+            'ingredients': recipe[1],
+            'instructions': recipe[2],
+            'ner': recipe[3],
+            'type': recipe[4],
+            'calories': recipe[9],
+            'nutriments': recipe[5]
         } for recipe in liked_recipes]
 
         return {'message': 'Liked recipes retrieved', 'recipes': results}, 200
