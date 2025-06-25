@@ -25,7 +25,7 @@ recipe_model = api.model('Recipe', {
     'link': fields.String(required=False,description='Origine default = null'),
     'source': fields.String(required=False,description='Source default = null'),
     'recipe_id': fields.Integer(required=False,description='recipe ID'),
-    'user_id': fields.Integer(required=True,description='User ID')
+    'user_id': fields.Integer(required=False,description='User ID')
     })
 
 bulk_like_model = api.model('BulkLikeRequest', {
