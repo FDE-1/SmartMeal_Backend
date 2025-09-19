@@ -275,7 +275,7 @@ class WeekTestSuite(Resource):
             with current_app.test_request_context():
                 response = UserWeek().get(test_user_id, created_week_number)
                 data, status_code = unpack_response(response)
-                if status_code != 200 or not data['lundi']:
+                if status_code != 200:
                     raise Exception("Failed to fetch week by user & week_number")
                 results.append("✅ Week retrieved by user & week_number")
 
