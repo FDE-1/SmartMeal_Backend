@@ -13,7 +13,7 @@ import threading
 from functools import wraps
 api = Namespace('tenserflow', description='Test TenserFlow')
 
-API_BASE_URL = 'http://95090e5191db.ngrok-free.app'
+API_BASE_URL = 'http://10612f536658.ngrok-free.app'
 
 ingredient_model = api.model('Ingredient', {
     'name': fields.String(required=True, description='Nom de l\'ingrédient'),
