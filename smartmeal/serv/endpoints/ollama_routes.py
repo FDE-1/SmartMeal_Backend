@@ -55,7 +55,7 @@ class SingleMeal(Resource):
                 return {'error': 'Aucune préférence fournie'}, 400
 
             # Valider les champs minimaux
-            required_fields = ["allergy", "diet", "goal", "number_of_meals", "grocery_day"]
+            required_fields = ["allergy", "goal", "number_of_meals", "grocery_day"]
             for field in required_fields:
                 if field not in preferences:
                     return {'error': f'Champ de préférence manquant: {field}'}, 400
