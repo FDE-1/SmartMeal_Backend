@@ -32,7 +32,7 @@ preferences_model = api.model('Preferences', {
     'preference_id': fields.Integer(required=True),
     'user_id': fields.Integer(required=True),
     'allergy': fields.Nested(allergy_model, required=True),
-    'diet': fields.String(required=False),
+    'diet': fields.String(required=False, allow_none=True),
     'goal': fields.String(required=True),
     'new': fields.Integer(required=True),
     'number_of_meals': fields.Integer(required=True),
