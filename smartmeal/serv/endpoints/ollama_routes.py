@@ -44,7 +44,7 @@ user_id_model = api.model('UserIdModel', {
 })        
 
 @api.route('/single_meal_id')
-class SingleMeal(Resource):
+class SingleMealID(Resource):
     @api.expect(user_id_model)
     @api.doc('generate_single_meal')
     def post(self):
@@ -88,17 +88,18 @@ class SingleMeal(Resource):
 
     def build_prompt(self, preferences):
         """Construit un prompt pour Mistral basé sur les préférences"""
-        allergy_list = [k for k, v in preferences['allergy'].items() if v]
+        allergy_dict = preferences.allergy or {}
+        allergy_list = [k for k, v in allergy_dict.items() if v]
         allergies_str = ", ".join(allergy_list) if allergy_list else "aucune"
 
         prompt = f"""
         Génère une seule recette de repas qui respecte ces préférences :
-        - Régime : {preferences['diet'] if preferences['diet'] else 'aucun'}
-        - Objectif : {preferences['goal'] if preferences['goal'] else 'aucun'}
+        - Régime : {preferences.diet if preferences.diet else 'aucun'}
+        - Objectif : {preferences.goal if preferences.goal else 'aucun'}
         - Allergies : {allergies_str}
-        - Nombre de repas par jour (indicatif) : {preferences['number_of_meals']}
-        - Jour des courses (indicatif) : {preferences['grocery_day']}
-        - Langue : {preferences['language']}
+        - Nombre de repas par jour (indicatif) : {preferences.number_of_meals}
+        - Jour des courses (indicatif) : {preferences.grocery_day}
+        - Langue : {preferences.language}
 
         La recette doit être saine, simple à préparer, et inclure :
         - Un titre (dans 'items')
