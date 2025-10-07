@@ -128,7 +128,10 @@ class UserShoppingLists(Resource):
         """Get all shopping lists for a user"""
         top_list = ShoppingList.query.filter_by(user_id=user_id).order_by(ShoppingList.shoppinglist_id.desc()).first()        
         return jsonify({
-            'shoppinglist_id': top_list.shoppinglist_id
+            'shoppinglist_id': top_list.shoppinglist_id,
+            'grocery': top_list.grocery,
+            'fresh_produce': top_list.fresh_produce,
+            'fruit_and_vegetables': top_list.fruit_and_vegetables
         })
     
 @api.route('/testsuite/shopping_lists')
