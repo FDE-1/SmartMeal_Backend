@@ -11,3 +11,4 @@ Flask-RESTX
 SQLAlchemy
 firebase-admin
 PyJWT
+OpenAI
