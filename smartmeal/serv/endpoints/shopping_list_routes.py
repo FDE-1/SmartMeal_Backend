@@ -126,13 +126,10 @@ class UserShoppingLists(Resource):
     @api.doc('get_user_shopping_lists')
     def get(self, user_id):
         """Get all shopping lists for a user"""
-        lists = ShoppingList.query.filter_by(user_id=user_id).all()
-        return jsonify([{
-            'shoppinglist_id': sl.shoppinglist_id,
-            'grocery': sl.grocery,
-            'fresh_produce': sl.fresh_produce,
-            'fruit_and_vegetables': sl.fruit_and_vegetables
-        } for sl in lists])
+        top_list = ShoppingList.query.filter_by(user_id=user_id).order_by(ShoppingList.shoppinglist_id.desc()).first()        
+        return jsonify({
+            'shoppinglist_id': top_list.shoppinglist_id
+        })
     
 @api.route('/testsuite/shopping_lists')
 class ShoppingListTestSuite(Resource):
