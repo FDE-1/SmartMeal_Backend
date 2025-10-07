@@ -176,6 +176,26 @@ class UserWeeks(Resource):
             'samedi': w.samedi,
             'dimanche': w.dimanche
         } for w in weeks])
+    
+    @api.doc('delete_user_weeks')
+    def delete(self, user_id):
+        """Delete all weeks for a user"""
+        try:
+            weeks = Week.query.filter_by(user_id=user_id).all()
+            if not weeks:
+                return {'message': 'No weeks found for this user'}, 404
+
+            for week in weeks:
+                db.session.delete(week)
+            db.session.commit()
+            return {'message': f'All weeks for user {user_id} deleted successfully'}
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error deleting weeks for user {user_id}: {str(e)}")
+            return {
+                'message': 'Failed to delete weeks',
+                'error': str(e)
+            }, 500
 
 
 @api.route('/user/<int:user_id>/week/<int:week_number>')

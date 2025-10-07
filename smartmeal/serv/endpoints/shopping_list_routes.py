@@ -134,6 +134,23 @@ class UserShoppingLists(Resource):
             'fruit_and_vegetables': top_list.fruit_and_vegetables
         })
     
+    @api.doc('delete_user_shopping_lists')
+    def delete(self, user_id):
+        """Delete all shopping lists for a user"""
+        try:
+            lists = ShoppingList.query.filter_by(user_id=user_id).all()
+            for sl in lists:
+                db.session.delete(sl)
+            db.session.commit()
+            return {'message': f'All shopping lists for user {user_id} deleted successfully'}
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error deleting shopping lists for user {user_id}: {str(e)}")
+            return {
+                'message': 'Failed to delete shopping lists',
+                'error': str(e)
+            }, 500
+    
 @api.route('/testsuite/shopping_lists')
 class ShoppingListTestSuite(Resource):
     @api.doc('run_shopping_list_test_suite')
