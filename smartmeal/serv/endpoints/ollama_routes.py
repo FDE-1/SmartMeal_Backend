@@ -132,6 +132,7 @@ class SingleMealID(Resource):
                 }}
             ]
         }}
+        Je t'ai mis en exemple salade de quinoa mais c'est juste pour l'exemple soit inventif/créatif pour le choix de ta recette
         """
         return prompt
 
