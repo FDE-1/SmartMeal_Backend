@@ -39,6 +39,11 @@ preferences_model = api.model('Preferences', {
     'grocery_day': fields.String(required=True),
     'language': fields.String(required=True),
 })
+update_meal_model = api.model('Preferences', {
+    'objectif': fields.String(required=True),
+    'meal_plan': fields.String(required=True)
+    ,})
+
 user_id_model = api.model('UserIdModel', {
     'user_id': fields.Integer(required=True, description='ID de l’utilisateur')
 })        
@@ -310,3 +315,111 @@ class SingleMeal(Resource):
             raise ValueError(f"Erreur de parsing JSON: {str(e)}")
         except Exception as e:
             raise ValueError(f"Erreur lors du parsing: {str(e)}")
+
+
+
+@api.route('/update_meal')
+class UpdateMeal(Resource):
+    @api.expect(update_meal_model)
+    @api.doc('update_meal')
+    def post(self):
+        """Regénère toute une semaine en fonction des objectifs de la personne"""
+        try:
+            if not request.is_json:
+                return {'error': 'Le corps de la requête doit être au format JSON'}, 400
+            data = request.get_json()
+            objectif = data.get('objectif')
+            if not objectif:
+                return {'error': 'objectif manquant dans la requête'}, 400
+
+            meal_plan = data.get('meal_plan')
+            if not objectif:
+                return {'error': 'meal_plan manquant dans la requête'}, 400
+
+            # Valider les champs minimaux
+            #required_fields = ["allergy", "goal", "number_of_meals", "grocery_day"]
+            #for field in required_fields:
+            #    if field not in preferences:
+            #        return {'error': f'Champ de préférence manquant: {field}'}, 400
+
+            # Construire un prompt pour Mistral
+            prompt = self.build_prompt(objectif, meal_plan)
+
+            # Interroger Ollama via Ngrok
+            ollama_response = self.query_openrouter(prompt)
+            if 'error' in ollama_response:
+                return ollama_response, 500
+
+            # Parser la réponse de Mistral en format JSON
+            meal_plan = self.parse_response(ollama_response)
+            return meal_plan
+
+        except requests.exceptions.HTTPError as e:
+            return {'error': f'Erreur lors de l\'appel à Ollama: {str(e)}'}, 500
+        except ValueError as e:
+            return {'error': f'JSON invalide dans la réponse: {str(e)}'}, 400
+        except Exception as e:
+            return {'error': f'Erreur interne: {str(e)}'}, 500
+
+    def build_prompt(self, objectif, meal_plan):
+        """Construit un prompt pour Mistral basé sur les préférences"""
+        prompt = f"""
+        Tu es un expert en nutrition et en cuisine. Voici un plan de repas au format JSON :
+
+{meal_plan}
+
+L'utilisateur souhaite modifier ce plan de repas en fonction de cet objectif : {objectif} (par exemple, réduire ou augmenter les glucides, protéines, calories, etc.).
+
+Modifie les recettes sans les dénaturer, c'est-à-dire en conservant l'essence des plats, les ingrédients principaux et les étapes de préparation similaires, mais en ajustant les quantités, en substituant certains ingrédients si nécessaire, et en recalculant les calories, nutriments et autres valeurs pour correspondre à l'objectif.
+
+Assure-toi que les modifications sont réalistes et maintiennent le plat appétissant et cohérent.
+
+Retourne le plan de repas modifié EXACTEMENT au même format JSON que celui fourni, sans ajouter ou supprimer de clés, et sans explications supplémentaires. Le résultat doit être un JSON valide et parsable.
+        """
+        return prompt
+
+    def query_openrouter(self, prompt):
+        """Interroge l'API OpenRouter (compatible ChatGPT) inspiré du code fourni"""
+        try:
+            client = OpenAI(
+                base_url=BASE_URL,
+                api_key=API_KEY,
+            )
+
+            completion = client.chat.completions.create(
+                model=MODEL,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ]
+            )
+            response = completion.choices[0].message.content
+            
+            return response
+        except Exception as e:
+            return {'error': f'Erreur lors de l\'appel à OpenRouter: {str(e)}'}
+        
+    def parse_response(self, response_text):
+        """Parse la réponse texte de ChatGPT en JSON structuré"""
+        try:
+            # Supprimer tout texte avant ou après le JSON
+            json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+            if not json_match:
+                raise ValueError("Aucun JSON valide trouvé dans la réponse")
+            
+            meal_plan = json.loads(json_match.group(0))
+            
+            # Valider le format
+            if "Meal" not in meal_plan or not isinstance(meal_plan["Meal"], list) or len(meal_plan["Meal"]) == 0:
+                raise ValueError("Format de meal_plan invalide")
+            
+            return meal_plan
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Erreur de parsing JSON: {str(e)}")
+        except Exception as e:
+            raise ValueError(f"Erreur lors du parsing: {str(e)}")
+
+
+
