@@ -14,7 +14,7 @@ from functools import wraps
 import os
 api = Namespace('tenserflow', description='Test TenserFlow')
 
-API_BASE_URL = "http://6c2bb6a1a224.ngrok-free.app"#os.getenv('API_URL')#'http://c17858b3942e.ngrok-free.app'
+API_BASE_URL = "http://a665b07de123.ngrok-free.app"#os.getenv('API_URL')#'http://c17858b3942e.ngrok-free.app'
 
 ingredient_model = api.model('Ingredient', {
     'name': fields.String(required=True, description='Nom de l\'ingrédient'),
