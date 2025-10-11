@@ -41,7 +41,7 @@ preferences_model = api.model('Preferences', {
 })
 update_meal_model = api.model('Preferences', {
     'objectif': fields.String(required=True),
-    'meal_plan': fields.String(required=True)
+    'meal_plan': fields.Raw(required=True)
     ,})
 
 user_id_model = api.model('UserIdModel', {
